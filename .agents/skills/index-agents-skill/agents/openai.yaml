@@ -1,0 +1,4 @@
+interface:
+  display_name: "Index Agents Skill"
+  short_description: "Keep README skill links current"
+  default_prompt: "Use $index-agents-skill when adding a new skill to agents-skills so the root README gets a short description and folder link."
