@@ -1,0 +1,4 @@
+interface:
+  display_name: "Dreambel Evidence Delivery"
+  short_description: "Evidence-first delivery for complex changes"
+  default_prompt: "Use $dreambel-deliver-with-evidence to diagnose and deliver this change through explicit evidence gates."
