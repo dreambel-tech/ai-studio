@@ -67,6 +67,19 @@ demonstrated mechanism with the smallest readable change. Preserve security, pri
 authorization, validation, lifecycle, cancellation, fail-closed behavior, and analogous consumers.
 Prefer a reusable product rule over subject-, site-, customer-, or example-specific branches.
 
+## Iteration circuit breaker
+
+- Record the last known-good commit, artifact, and real-path outcome before the first correction.
+- Before each correction, name one causal variable and the exact trace or outcome expected to change.
+- Accept a regression fixture only when it fails before the correction and passes after it.
+- If a post-fix real-path replay still fails, do not immediately patch the same family again. Return
+  to the known-good baseline, compare the complete path, and seek an independent review.
+- After two contradicted or ineffective corrections, freeze further mutations and produce a
+  divergence report: confirmed facts, accumulated changes, baseline differences, and the next
+  single discriminating experiment.
+- Run expensive full-suite, deployment, and device validation only after the focused causal gate is
+  satisfied.
+
 ## 7. Own performance by stage
 
 Measure elapsed time at owned boundaries, including cold and warm paths. Separate transport,
