@@ -1,0 +1,4 @@
+interface:
+  display_name: "React + SCSS Architecture"
+  short_description: "React architecture with strict TypeScript and global SCSS"
+  default_prompt: "Use $react-scss-architecture to create or evolve a maintainable React/Vite interface."
