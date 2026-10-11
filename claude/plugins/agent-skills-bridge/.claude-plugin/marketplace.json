@@ -1,0 +1,15 @@
+{
+  "name": "agent-skills-bridge",
+  "owner": {
+    "name": "Guénolé Kikabou",
+    "url": "https://github.com/GuenoleK"
+  },
+  "description": "Marketplace for the agent-skills-bridge Claude Code plugin.",
+  "plugins": [
+    {
+      "name": "agent-skills-bridge",
+      "source": "./",
+      "description": "Makes the skills in a project's .agents/skills folder available in Claude Code by linking .claude/skills to it at session start."
+    }
+  ]
+}

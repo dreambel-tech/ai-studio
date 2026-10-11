@@ -1,0 +1,13 @@
+{
+  "name": "agent-skills-bridge",
+  "description": "Makes the skills in a project's .agents/skills folder (the cross-tool Agent Skills convention) available in Claude Code by linking .claude/skills to it at session start.",
+  "version": "0.1.0",
+  "author": {
+    "name": "Guénolé Kikabou",
+    "url": "https://github.com/GuenoleK"
+  },
+  "homepage": "https://github.com/GuenoleK/agent-skills-bridge",
+  "repository": "https://github.com/GuenoleK/agent-skills-bridge",
+  "license": "MIT",
+  "keywords": ["skills", "agent-skills", "agents", "codex", "symlink", "session-start"]
+}
