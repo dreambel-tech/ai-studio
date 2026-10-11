@@ -1,0 +1,4 @@
+interface:
+  display_name: "Meaning-First Design"
+  short_description: "Avoid generic AI-looking interfaces by letting the meaning of the project drive every design choice"
+  default_prompt: "Use $meaning-first-design to design or review this interface so it carries a clear meaning instead of generic defaults."

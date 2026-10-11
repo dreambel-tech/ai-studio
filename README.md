@@ -8,5 +8,6 @@ Different agent skills for the people
 | --- | --- |
 | [code-coherence-guardrails](code-coherence-guardrails/) | Guardrails for coherent code and architecture reviews. |
 | [dreambel-deliver-with-evidence](dreambel-deliver-with-evidence/) | Evidence-first delivery for complex changes |
+| [meaning-first-design](meaning-first-design/) | Avoid generic AI-looking interfaces by letting the meaning of the project drive every design choice |
 | [react-scss-architecture](react-scss-architecture/) | React architecture with strict TypeScript and global SCSS |
 <!-- agents-skills:index:end -->
