@@ -32,18 +32,6 @@ def parse_frontmatter(skill_md: Path) -> dict[str, str]:
     return values
 
 
-def read_openai_short_description(skill_dir: Path) -> str | None:
-    openai_yaml = skill_dir / "agents" / "openai.yaml"
-    if not openai_yaml.exists():
-        return None
-
-    for line in openai_yaml.read_text(encoding="utf-8").splitlines():
-        match = re.match(r"\s*short_description:\s*(.+?)\s*$", line)
-        if match:
-            return match.group(1).strip().strip("'\"") or None
-    return None
-
-
 def compact_description(description: str) -> str:
     description = re.sub(r"\s+", " ", description).strip()
     if not description:
@@ -99,8 +87,7 @@ def find_skill_entries(
         long_description = metadata.get("description", "")
         relative_link = skill_dir.relative_to(repo_root).as_posix() + "/"
         short_description = (
-            read_openai_short_description(skill_dir)
-            or existing_by_name.get(name)
+            existing_by_name.get(name)
             or existing_by_link.get(relative_link)
             or compact_description(long_description)
         )

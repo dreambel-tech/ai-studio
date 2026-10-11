@@ -16,8 +16,8 @@ This skill is repository-specific. It applies to `agents-skills` and should run 
 1. Create or update the skill folder first. Only skills whose folder is a direct child of the repository root belong in the public README index; skills under `.agents/skills` are internal and excluded.
 2. Confirm the skill has a valid `SKILL.md` with `name` and `description` frontmatter.
 3. Write a short README-facing description:
-   - Prefer `agents/openai.yaml` `short_description` when it exists and is accurate.
-   - Otherwise write one clear sentence fragment, usually 6-18 words.
+   - Write one clear sentence fragment, usually 6-18 words, directly in the README entry.
+   - Keep skills tool-agnostic: no tool-specific metadata files (such as `agents/openai.yaml`); `SKILL.md` with `name` and `description` is the standard.
    - Avoid copying a long trigger description into the README.
 4. Add or update the root `README.md` skill index with:
    - a Markdown link to the skill folder
@@ -50,9 +50,9 @@ Run the bundled script from the repository root when you want a deterministic re
 python .agents/skills/index-agents-skill/scripts/update_readme_index.py
 ```
 
-The script scans only direct child folders for `SKILL.md`, skips internal `.agents/skills` entries and other artefacts, reads `agents/openai.yaml` `short_description` when available, and rewrites the marked README table.
+The script scans only direct child folders for `SKILL.md`, skips internal `.agents/skills` entries and other artefacts, keeps the descriptions already written in the README, derives a description from `SKILL.md` for new skills, and rewrites the marked README table.
 
-After running it, inspect `README.md`. If an auto-generated description is too long or too generic, edit the relevant skill's `agents/openai.yaml` `short_description` or manually refine the README entry.
+After running it, inspect `README.md`. If an auto-generated description is too long or too generic, refine the README entry by hand: the script keeps it on the next run.
 
 ## Checks Before Finishing
 
