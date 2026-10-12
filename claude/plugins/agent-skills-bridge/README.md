@@ -19,20 +19,42 @@ The fix is to link `.claude/skills` to `.agents/skills` once per project. `.agen
 
 ## What it does
 
-At session start, in the project you open:
+At session start, the plugin looks at the folder you opened and at each of its direct subfolders. It applies the same steps to every one of them that has a `.agents/skills/` folder:
 
-1. If there is no `.agents/skills/` folder, it does nothing and prints nothing.
-2. If `.claude/skills` does not exist, it links it to `.agents/skills`. It creates `.claude/` first if needed. The link type depends on the OS:
+1. If `.claude/skills` does not exist, it links it to `.agents/skills`. It creates `.claude/` first if needed. The link type depends on the OS:
    - **Windows**: a directory junction. A junction needs no administrator rights and no Developer Mode.
    - **macOS and Linux**: a relative symbolic link (`.claude/skills -> ../.agents/skills`).
-3. In a git repository, it adds `/.claude/skills` to `.git/info/exclude`. This keeps the link out of `git status` on your machine only.
-4. It asks Claude Code to re-scan skills, so the linked skills are available in the same session. It prints one short message saying so.
-5. If `.claude/skills` is already a link to `.agents/skills`, it does nothing and prints nothing.
+2. It keeps the new link out of `git status` on your machine only, by adding it to `.git/info/exclude`:
+   - in the folder's own repository, as `/.claude/skills`;
+   - or, for a plain subfolder of a repository opened at its root, in that repository, as `/<subfolder>/.claude/skills`.
+3. If `.claude/skills` is already a link to `.agents/skills`, it does nothing.
+
+When it has created at least one link, it prints a single short message listing the folders concerned, and asks Claude Code to re-scan skills. When there is nothing to do, it prints nothing.
+
+### Umbrella folders
+
+You may open Claude Code in a folder that is not itself a project but holds several, each with its own repository:
+
+```
+ailo/                          <- session folder, no .agents
+├── ailo-landing-page/
+│   └── .agents/skills/        <- linked: ailo-landing-page/.claude/skills
+├── ailo-android/              <- no .agents: left alone
+└── node_modules/              <- never scanned
+```
+
+The plugin links `.claude/skills` in every direct subfolder that has `.agents/skills`, as it would at the root. To keep the session start instant, it looks only one level down, never recursively. It skips:
+
+- hidden folders (names starting with `.`);
+- dependency and build folders: `node_modules`, `bower_components`, `vendor`, `dist`, `build`, `out`, `target`, `bin`, `obj`, `coverage`, `__pycache__`, `venv`.
+
+Claude Code loads skills from a subfolder's `.claude/skills/` later than from the session folder, so these skills are not available right away. See [Limitations](#limitations).
 
 ## What it never does
 
-- It never modifies, moves or deletes an existing `.claude/skills` folder. It never replaces a link that points somewhere else. In both cases it prints a short message explaining what to do, and leaves everything as it is.
-- It never edits your project's `.gitignore` and never commits anything.
+- It never modifies, moves or deletes an existing `.claude/skills` folder. It never replaces a link that points somewhere else. In both cases it names the folder in its message, explains what to do, and leaves everything as it is.
+- It never edits a `.gitignore` and never commits anything.
+- It never scans deeper than one level below the session folder.
 - It never copies skills, and never writes to `.agents/skills/`.
 - It never blocks a session. Every outcome, including errors, exits successfully with at most one message.
 - It adds no skills, commands or agents of its own. The plugin is a single `SessionStart` hook.
@@ -118,24 +140,50 @@ Claude Code has no per-OS hook selection. It runs a hook command with `sh` on ma
 - **Windows with Git Bash**: same as above. `link-skills.sh` detects Windows and hands over to `link-skills.ps1`, because `ln -s` in Git Bash copies files instead of linking them.
 - **Windows without Git Bash** (PowerShell): `exec` is not a PowerShell command. It fails silently, on stderr, and the `powershell` part runs `link-skills.ps1`.
 
-Each script reads the project root from `CLAUDE_PROJECT_DIR`, falling back to the `cwd` field of the hook input. Messages are returned as `systemMessage`, so they are shown to you and are not added to Claude's context. After creating a link, the hook also returns `reloadSkills: true` so Claude Code re-scans skills in the same session.
+Each script reads the session folder from `CLAUDE_PROJECT_DIR`, falling back to the `cwd` field of the hook input. Messages are returned as `systemMessage`, so they are shown to you and are not added to Claude's context. After creating a link, the hook also returns `reloadSkills: true` so Claude Code re-scans skills in the same session.
 
 ## Limitations
 
-- **First session.** Claude Code discovers skills before `SessionStart` hooks finish. The plugin asks for a re-scan, which makes the skills available in the same session with the Claude Code version it was tested on. If they do not appear, restart the session once. Later sessions find the link already in place.
+- **First session.** Claude Code discovers skills before `SessionStart` hooks finish. For the session folder, the plugin asks for a re-scan, which makes the skills available in the same session with the Claude Code version it was tested on. If they do not appear, restart the session once. Later sessions find the link already in place.
+- **Skills in subfolders load later.** This applies to umbrella folders and to subpackages. The Claude Code documentation ([Load skills in monorepos and subdirectories](https://code.claude.com/docs/en/skills)) says that skills in a `.claude/skills/` directory below where you started do not load at startup. They load the first time Claude reads or edits a file in that subdirectory, and stay available for the rest of the session. Until then, they are not in the `/` menu and cannot be invoked by name.
+  - To load them at once, run `/add-dir` with the subfolder's path (Claude Code v2.1.257 or later).
+  - The re-scan does not help here: with Claude Code 2.1.283, it did not pick up a subfolder's skills.
 - **A real `.claude/skills` folder is left untouched.** Move its skills into `.agents/skills`, then delete `.claude/skills`. The link is created at the next session start.
 - **Windows junctions store an absolute path.** If you move or rename the project folder, the junction still points to the old location. Remove it with `cmd /c rmdir .claude\skills`; the plugin recreates it at the next session start. Links on macOS and Linux are relative and are not affected.
 - **Git worktrees.** In a worktree, `.git` is a file, not a folder. The link is created, but it is not added to `.git/info/exclude`, so it can appear as untracked in `git status`.
-- **Only `.agents/skills` at the project root** is linked. Nested `.agents/skills` folders in subdirectories are not handled.
+- **One level deep.** Only the session folder and its direct subfolders are scanned. A project two levels down is linked when you open Claude Code in it, or in its parent folder.
 
-## Tested
+## Tests
 
-Version 0.1.0 was tested with Claude Code 2.1.283 on:
+Run the test suite for your platform from the repository root.
 
-- **Windows 11**: Windows PowerShell 5.1. The hook command was run both through Git Bash and through PowerShell.
+Windows (needs git):
+
+```powershell
+powershell -ExecutionPolicy Bypass -File tests\run.ps1
+```
+
+macOS and Linux (optionally pass the shell to test, such as `dash` or `"bash --posix"`):
+
+```bash
+tests/run.sh
+```
+
+Each suite creates throwaway projects in a temporary folder and deletes them afterwards. On Windows, it removes each junction with `rmdir` before deleting anything. The suites cover:
+
+- link creation and a silent second run;
+- a project without `.agents`;
+- an existing real `.claude/skills` folder, a link pointing elsewhere, and a broken link;
+- a project path read from the hook input;
+- umbrella folders: only the subproject with `.agents/skills` is linked, a subproject's real folder is left alone, and `node_modules`, hidden and build folders are ignored;
+- the exact `hooks.json` command, run the way Claude Code runs it.
+
+Version 0.2.0 passes both suites with Claude Code 2.1.283:
+
+- **Windows 11**: Windows PowerShell 5.1. The hook command is run through both Git Bash and PowerShell.
 - **Ubuntu (WSL)**: `dash` and `bash --posix`.
 
-Each run covered: link creation, a silent second run, a project without `.agents`, an existing real folder, a link pointing elsewhere, and a project path read from the hook input. macOS was not tested on real hardware. The script uses only POSIX features available in macOS's `/bin/sh`.
+macOS was not tested on real hardware. The script uses only POSIX features available in macOS's `/bin/sh`.
 
 ## License
 
