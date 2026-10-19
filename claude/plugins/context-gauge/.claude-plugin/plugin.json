@@ -1,0 +1,13 @@
+{
+  "name": "context-gauge",
+  "description": "Tells the session once per level when its context grows heavy (250k, 400k, 600k tokens by default), so it can offer a fresh session from a relay brief at the next natural break. Never blocks.",
+  "version": "0.1.0",
+  "author": {
+    "name": "Dreambel Tech",
+    "url": "https://github.com/dreambel-tech"
+  },
+  "homepage": "https://github.com/dreambel-tech/ai-studio/tree/main/claude/plugins/context-gauge",
+  "repository": "https://github.com/dreambel-tech/ai-studio",
+  "license": "MIT",
+  "keywords": ["context", "tokens", "usage", "session", "handoff", "user-prompt-submit"]
+}

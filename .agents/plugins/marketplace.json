@@ -1,0 +1,20 @@
+{
+  "name": "ai-studio",
+  "interface": {
+    "displayName": "ai-studio"
+  },
+  "plugins": [
+    {
+      "name": "context-gauge",
+      "source": {
+        "source": "local",
+        "path": "./codex/plugins/context-gauge"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "Developer Tools"
+    }
+  ]
+}

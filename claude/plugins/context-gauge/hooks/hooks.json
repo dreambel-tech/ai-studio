@@ -1,0 +1,17 @@
+{
+  "description": "Tells the session once per level when its context grows heavy, so it can offer a fresh session at the next natural break.",
+  "hooks": {
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node",
+            "args": ["${CLAUDE_PLUGIN_ROOT}/hooks/context-gauge.mjs"],
+            "timeout": 10
+          }
+        ]
+      }
+    ]
+  }
+}

@@ -1,0 +1,26 @@
+{
+  "name": "ai-studio",
+  "owner": {
+    "name": "Dreambel Tech",
+    "url": "https://github.com/dreambel-tech"
+  },
+  "description": "Dreambel Tech's agent skills and Claude Code plugins.",
+  "plugins": [
+    {
+      "name": "studio-skills",
+      "source": "./",
+      "strict": false,
+      "description": "Every skill in the ai-studio skills folder, as Claude Code skills: meaning-first design, delivery with evidence, code coherence, React SCSS architecture and session relay."
+    },
+    {
+      "name": "agent-skills-bridge",
+      "source": "./claude/plugins/agent-skills-bridge",
+      "description": "Makes the skills in a project's .agents/skills folder available in Claude Code by linking .claude/skills to it at session start."
+    },
+    {
+      "name": "context-gauge",
+      "source": "./claude/plugins/context-gauge",
+      "description": "Tells the session once per level when its context grows heavy, so it can offer a fresh session from a relay brief at the next natural break."
+    }
+  ]
+}
