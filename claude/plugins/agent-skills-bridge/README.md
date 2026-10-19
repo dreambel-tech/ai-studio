@@ -64,17 +64,17 @@ Claude Code loads skills from a subfolder's `.claude/skills/` later than from th
 In Claude Code:
 
 ```
-/plugin marketplace add GuenoleK/agent-skills-bridge
-/plugin install agent-skills-bridge@agent-skills-bridge
+/plugin marketplace add dreambel-tech/ai-studio
+/plugin install agent-skills-bridge@ai-studio
 ```
 
-The first command adds this repository as a plugin marketplace. The second installs the plugin from it. Claude Code opens the plugin panel so you can choose the installation scope; the user scope enables it in all your projects.
+The first command adds the [ai-studio](../../../) repository as a plugin marketplace. The second installs the plugin from it. Claude Code opens the plugin panel so you can choose the installation scope; the user scope enables it in all your projects.
 
 From a terminal, the equivalent is:
 
 ```bash
-claude plugin marketplace add GuenoleK/agent-skills-bridge
-claude plugin install agent-skills-bridge@agent-skills-bridge
+claude plugin marketplace add dreambel-tech/ai-studio
+claude plugin install agent-skills-bridge@ai-studio
 ```
 
 Requirements:
@@ -87,8 +87,8 @@ There are no other dependencies: no Node, Python or `jq`.
 ## Disable or uninstall
 
 ```
-/plugin disable agent-skills-bridge@agent-skills-bridge
-/plugin uninstall agent-skills-bridge@agent-skills-bridge
+/plugin disable agent-skills-bridge@ai-studio
+/plugin uninstall agent-skills-bridge@ai-studio
 ```
 
 Disabling or uninstalling the plugin leaves existing links in place, and they keep working. To remove a link from a project:
@@ -155,7 +155,7 @@ Each script reads the session folder from `CLAUDE_PROJECT_DIR`, falling back to 
 
 ## Tests
 
-Run the test suite for your platform from the repository root.
+Run the test suite for your platform from this plugin's folder (`claude/plugins/agent-skills-bridge`).
 
 Windows (needs git):
 

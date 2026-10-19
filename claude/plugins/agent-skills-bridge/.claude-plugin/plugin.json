@@ -6,8 +6,8 @@
     "name": "Guénolé Kikabou",
     "url": "https://github.com/GuenoleK"
   },
-  "homepage": "https://github.com/GuenoleK/agent-skills-bridge",
-  "repository": "https://github.com/GuenoleK/agent-skills-bridge",
+  "homepage": "https://github.com/dreambel-tech/ai-studio/tree/main/claude/plugins/agent-skills-bridge",
+  "repository": "https://github.com/dreambel-tech/ai-studio",
   "license": "MIT",
   "keywords": ["skills", "agent-skills", "agents", "codex", "symlink", "session-start"]
 }
