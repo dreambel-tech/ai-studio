@@ -1,7 +1,7 @@
 {
   "name": "context-gauge",
   "description": "Tells the session once per level when its context grows heavy (250k, 400k, 600k tokens by default), so it can offer a fresh session from a relay brief at the next natural break. Never blocks.",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "author": {
     "name": "Dreambel Tech",
     "url": "https://github.com/dreambel-tech"

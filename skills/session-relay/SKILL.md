@@ -37,18 +37,26 @@ Otherwise, count the signals you can observe yourself:
 
 One signal means light, two or three mean heavy, four or more mean very heavy.
 
-## 2. Offer the relay in one sentence
+## 2. Offer the relay once, in one place
 
 - **Light**: say nothing.
-- **Heavy**: when the next step is a new unit of work, add one sentence at the end of your report.
-- **Very heavy**: add the sentence at the end of your report, even if the next step continues
-  the same work.
+- **Heavy**: offer it when the next step is a new unit of work.
+- **Very heavy**: offer it even if the next step continues the same work.
+
+Put the offer in exactly one place:
+
+1. If the agent tool has a dedicated place for next-step suggestions, such as a next-step box or
+   suggestion buttons, put it there, as a short button label like "New session", and nowhere
+   else. Add nothing to the text of your report.
+2. Otherwise, add one sentence as the last line of your report, after a blank line.
 
 The sentence states the fact and the benefit, in the user's language, with no alarm and no
-apology. For example: "This session is heavy (about 450k of context). If this batch is done, a
-fresh session would start from a brief and cost much less per step." Then stop. Do not repeat the
-offer until the session reaches the next level or the user brings it up. If the user wants to keep
-going here, keep going.
+apology: at most 25 words, no heading, no bold, no list, and no explanation of how the gauge or
+this skill works. For example: "This session is heavy (about 450k of context): a fresh session
+would start from a brief and cost much less per step."
+
+Then stop. Do not repeat the offer until the session reaches the next level or the user brings it
+up. If the user wants to keep going here, keep going.
 
 ## 3. Write the relay brief
 

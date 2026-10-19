@@ -23,7 +23,12 @@ first time, it adds a short note to the model's context:
 
 - the current size and level (250k: heavy; 400k and 600k: very heavy);
 - an instruction not to interrupt the current task, and to offer a fresh session from a relay brief
-  in one sentence at the next natural break: a batch delivered, a pull request opened, a report sent.
+  at the next natural break (a batch delivered, a pull request opened, a report sent), once and in
+  one place: in the tool's next-step box or suggestion buttons when it has them, as in the Claude
+  desktop app, otherwise as one short sentence on the last line of the report.
+
+In the terminal, the [context-line](../../statusline/) status line shows the same levels to you in
+the footer, outside the conversation.
 
 The [`session-relay`](../../../skills/session-relay/) skill describes how the agent assesses the
 session and writes the brief. The plugin works without it, but works best with it.

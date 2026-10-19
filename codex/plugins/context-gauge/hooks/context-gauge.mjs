@@ -115,9 +115,12 @@ export function message({ tokens, window }, level, notifyUser) {
   const context =
     `Context gauge: this session's context is ${size} (${name}). ` +
     "Every step now re-reads all of it. Do not interrupt the current task for this. " +
-    "At the next natural break (a batch delivered, a pull request opened, a report sent), " +
-    "add one sentence to your report, in the user's language, offering a fresh session from a relay brief " +
-    "(the session-relay skill, if available, describes the brief). Say it once; if the user prefers to continue here, continue.";
+    "At the next natural break (a batch delivered, a pull request opened, a report sent), offer a fresh session " +
+    "from a relay brief, once and in one place: if the agent tool has a dedicated place for next-step suggestions " +
+    "(a next-step box, suggestion buttons), put it there as a short button and add nothing to your text; otherwise add " +
+    "one sentence of at most 25 words, in the user's language, as the last line of your report after a blank line. " +
+    "No heading, no bold, no explanation of this note. The session-relay skill, if available, describes the brief. " +
+    "If the user prefers to continue here, continue.";
   const output = { hookSpecificOutput: { hookEventName: "UserPromptSubmit", additionalContext: context } };
   if (notifyUser) output.systemMessage = `Context: ${size} (${name}). A fresh session from a relay brief would cost much less per step.`;
   return output;
