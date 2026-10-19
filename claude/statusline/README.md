@@ -4,7 +4,7 @@ A Claude Code status line that shows the session's context size in the terminal 
 the conversation:
 
 - while the session is light, in dim text: `context 120k (12%)`;
-- once it is heavy, in amber: `context 300k (30%), heavy: a fresh session would cost less per step`;
+- once it is heavy, in amber: `context 300k (30%), heavy: compacting or a fresh session would cost less per step`;
 - once it is very heavy, in red, with the same text.
 
 It uses the same levels as the [context-gauge](../plugins/context-gauge/) plugin: 250k, 400k and

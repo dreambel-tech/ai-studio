@@ -27,7 +27,7 @@ the shared parts works without the adapters.
 | [dreambel-deliver-with-evidence](skills/dreambel-deliver-with-evidence/) | Evidence-first delivery for complex changes |
 | [meaning-first-design](skills/meaning-first-design/) | Avoid generic AI-looking interfaces by letting the meaning of the project drive every design choice |
 | [react-scss-architecture](skills/react-scss-architecture/) | React architecture with strict TypeScript and global SCSS |
-| [session-relay](skills/session-relay/) | Keep long sessions affordable: assess their weight, offer a fresh session, write the relay brief |
+| [session-relay](skills/session-relay/) | Keep long sessions affordable: assess their weight, offer to compact or start fresh, write the relay brief |
 <!-- agents-skills:index:end -->
 
 Each skill is a folder with a `SKILL.md`, following the [Agent Skills](https://agentskills.io)

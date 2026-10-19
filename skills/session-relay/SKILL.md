@@ -1,14 +1,15 @@
 ---
 name: session-relay
-description: Keep long agent sessions affordable without losing quality. Use at the end of every completed unit of work (a batch, a pull request, a report, a validated change), after the conversation has been compacted or summarized, when the agent tool reports a large context, when the user moves to an unrelated topic in a long session, or when the user asks to hand off, continue elsewhere or start fresh. Assesses how heavy the session has become, offers a fresh session in one sentence at a natural break, and writes a self-contained relay brief so the next session, in any agent tool, loses nothing.
+description: Keep long agent sessions affordable without losing quality. Use at the end of every completed unit of work (a batch, a pull request, a report, a validated change), after the conversation has been compacted or summarized, when the agent tool reports a large context, when the user moves to an unrelated topic in a long session, or when the user asks to compact, hand off, continue elsewhere or start fresh. Assesses how heavy the session has become, offers the right move at a natural break (compact here or start a fresh session), and writes the relay brief that carries the work over without losing anything.
 ---
 
 # Session Relay
 
 Every turn re-reads the whole conversation. A short command costs as much as the context it sits
 in: at 600k tokens of context, one `ls` costs 600k tokens. Most of the spend of a long session comes
-from its last, heaviest turns, not from the work itself. A fresh session that starts from a good
-brief does the same work for a fraction of the cost, and usually with sharper attention.
+from its last, heaviest turns, not from the work itself. Compacting at the right moment, or
+starting a fresh session from a good brief, does the same work for a fraction of the cost, and
+usually with sharper attention.
 
 This skill never blocks, never interrupts a task, and never lowers the bar for verification.
 
@@ -37,31 +38,55 @@ Otherwise, count the signals you can observe yourself:
 
 One signal means light, two or three mean heavy, four or more mean very heavy.
 
-## 2. Offer the relay once, in one place
+- **Light**: offer nothing.
+- **Heavy**: offer a move when the next step is a new unit of work.
+- **Very heavy**: offer a move even if the next step continues the same work.
 
-- **Light**: say nothing.
-- **Heavy**: offer it when the next step is a new unit of work.
-- **Very heavy**: offer it even if the next step continues the same work.
+## 2. Choose the move
+
+Compacting replaces the conversation with a summary and keeps the session: same folder, same task
+list, same linked sessions. A fresh session starts clean from a brief. Choose by where the work
+stands:
+
+| Where the work stands | Move |
+| --- | --- |
+| In the middle of a task, with useful working state (a bug being traced, files just read) | none yet: finish the step first |
+| Heavy, and the same task or thread continues (the next pull request of a stack, the same topic) | compact here, with a focus |
+| The topic changes for the next unit of work | fresh session from the brief |
+| Already compacted twice or more, or the session spans several days | fresh session from the brief |
+
+A summary of a summary loses detail; after two compactions, prefer a fresh session.
+
+## 3. Offer it once, in one place
 
 Put the offer in exactly one place:
 
 1. If the agent tool has a dedicated place for next-step suggestions, such as a next-step box or
-   suggestion buttons, put it there, as a short button label like "New session", and nowhere
-   else. Add nothing to the text of your report.
-2. Otherwise, add one sentence as the last line of your report, after a blank line.
+   suggestion buttons, put it there and nowhere else. Add nothing to the text of your report.
+2. Otherwise, add it as the last line of your report, after a blank line.
 
-The sentence states the fact and the benefit, in the user's language, with no alarm and no
-apology: at most 25 words, no heading, no bold, no list, and no explanation of how the gauge or
-this skill works. For example: "This session is heavy (about 450k of context): a fresh session
-would start from a brief and cost much less per step."
+How each move is offered:
+
+- **Fresh session**: if the tool can start one for the user, a short button label such as "New
+  session"; otherwise one sentence.
+- **Compact**: in most tools only the user can run the compaction command, so give it ready to copy
+  on one line. If the command takes instructions (Claude Code: `/compact <instructions>`), add a
+  focus of at most 40 words: the goal, the decisions to keep, the current state and the next step.
+  Otherwise give the bare command (Codex: `/compact`).
+
+Wording: the fact and the benefit, in the user's language, with no alarm and no apology. At most 25
+words besides the command, no heading, no bold, no list, and no explanation of how the gauge or this
+skill works. For example: "This session is heavy (about 300k of context); compacting would keep the
+thread and cost much less per step:" followed by the command on its own line.
 
 Then stop. Do not repeat the offer until the session reaches the next level or the user brings it
-up. If the user wants to keep going here, keep going.
+up. If the user wants to keep going as is, keep going.
 
-## 3. Write the relay brief
+## 4. Write the relay brief
 
-When the user accepts, write a brief that lets a new session continue without this conversation.
-Write it in the user's language, between 300 and 900 words, using these headings:
+For a compaction, the focus in the command is enough. For a fresh session, write a brief that lets
+the new session continue without this conversation, in the user's language, between 300 and 900
+words, using these headings:
 
 1. **Goal**: what the user wants, in their words when possible.
 2. **State**: repository paths, branches, commits (pushed or not), pull requests, deployments,
@@ -75,22 +100,23 @@ Write it in the user's language, between 300 and 900 words, using these headings
 7. **Next steps**: ordered, concrete, with the first one ready to start.
 8. **Read first**: the few files to open first, with line ranges when useful.
 
-Rules for the brief:
+Rules for the brief and the focus:
 
 - Facts only, with paths, identifiers and numbers. No narrative of how the session went.
 - Never include secrets, tokens, passwords or personal data.
 - Name what is not done or not verified as plainly as what is done.
 - An approval in the brief informs the next session; it does not extend to new actions.
 
-## 4. Hand over
+## 5. Hand over
 
-- If the agent tool can start a new session or thread with a prompt, start it with the brief as its
-  first message, and tell the user where to find it.
-- Otherwise, give the brief in one fenced block, ready to paste into a new session of any agent
-  tool. Save it to a file only if the user asks.
-- Then stop working in this session, unless the user says otherwise.
+- **Compaction**: once the user has compacted, continue from the summary. Re-read only the files the
+  next step needs.
+- **Fresh session**: if the agent tool can start a new session or thread with a prompt, start it
+  with the brief as its first message, and tell the user where to find it. Otherwise, give the
+  brief in one fenced block, ready to paste into a new session of any agent tool. Save it to a file
+  only if the user asks. Then stop working in this session, unless the user says otherwise.
 
-## 5. Keep each turn light while working
+## 6. Keep each turn light while working
 
 These habits cut cost without removing any check. When a full read or a screenshot is what
 correctness needs, do it.

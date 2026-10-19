@@ -34,7 +34,7 @@ export function render(status, { color = true } = {}) {
   const paint = (code, text) => (color ? `${code}${text}${RESET}` : text);
   if (level === 0) return paint(DIM, `context ${k}k${share}`);
   const name = level === 1 ? "heavy" : "very heavy";
-  return paint(level === 1 ? AMBER : RED, `context ${k}k${share}, ${name}: a fresh session would cost less per step`);
+  return paint(level === 1 ? AMBER : RED, `context ${k}k${share}, ${name}: compacting or a fresh session would cost less per step`);
 }
 
 function main() {

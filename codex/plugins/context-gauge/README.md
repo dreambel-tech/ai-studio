@@ -10,8 +10,9 @@ script.
 On every prompt you send, a `UserPromptSubmit` hook reads the last `token_count` event of the
 session rollout: the size of the last request and the model's context window. When the context
 crosses a level for the first time, it adds a short note to the model's context, asking it not to
-interrupt the current task and to offer a fresh session from a relay brief in one sentence at the
-next natural break.
+interrupt the current task and to offer one move at the next natural break: `/compact` if the same
+thread continues, or a fresh session from a relay brief if the topic changes or the session was
+already compacted twice.
 
 Levels:
 

@@ -22,10 +22,12 @@ session transcript (input + cache writes + cache reads). When the context crosse
 first time, it adds a short note to the model's context:
 
 - the current size and level (250k: heavy; 400k and 600k: very heavy);
-- an instruction not to interrupt the current task, and to offer a fresh session from a relay brief
-  at the next natural break (a batch delivered, a pull request opened, a report sent), once and in
-  one place: in the tool's next-step box or suggestion buttons when it has them, as in the Claude
-  desktop app, otherwise as one short sentence on the last line of the report.
+- an instruction not to interrupt the current task, and to offer one move at the next natural break
+  (a batch delivered, a pull request opened, a report sent): compacting here if the same thread
+  continues, with the `/compact` command ready to copy, or a fresh session from a relay brief if
+  the topic changes or the session was already compacted twice. The offer goes in the tool's
+  next-step box or suggestion buttons when it has them, as in the Claude desktop app, otherwise on
+  the last line of the report.
 
 In the terminal, the [context-line](../../statusline/) status line shows the same levels to you in
 the footer, outside the conversation.
