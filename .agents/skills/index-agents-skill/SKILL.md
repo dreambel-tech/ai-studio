@@ -1,19 +1,19 @@
 ---
 name: index-agents-skill
-description: Use when creating, adding, renaming, moving, or updating a skill in the agents-skills repository. Ensures the root README.md includes a short description and a Markdown link for each skill folder at the repository root, while excluding internal skills under .agents/skills.
+description: Use when creating, adding, renaming, moving, or updating a skill in the ai-studio repository. Ensures the root README.md includes a short description and a Markdown link for each skill folder under skills/, while excluding internal skills under .agents/skills.
 ---
 
 # Index Agents Skill
 
 ## Goal
 
-Keep `README.md` as the public catalogue of this repository whenever a skill is added or changed.
+Keep the root `README.md` as the public catalogue of the skills in this repository whenever a skill is added or changed.
 
-This skill is repository-specific. It applies to `agents-skills` and should run as part of any new skill creation workflow in this repo.
+This skill is repository-specific. It applies to `ai-studio` and should run as part of any new skill creation workflow in this repo.
 
 ## Workflow
 
-1. Create or update the skill folder first. Only skills whose folder is a direct child of the repository root belong in the public README index; skills under `.agents/skills` are internal and excluded.
+1. Create or update the skill folder first. Only skills whose folder is a direct child of `skills/` belong in the public README index; skills under `.agents/skills` are internal and excluded.
 2. Confirm the skill has a valid `SKILL.md` with `name` and `description` frontmatter.
 3. Write a short README-facing description:
    - Write one clear sentence fragment, usually 6-18 words, directly in the README entry.
@@ -50,7 +50,7 @@ Run the bundled script from the repository root when you want a deterministic re
 python .agents/skills/index-agents-skill/scripts/update_readme_index.py
 ```
 
-The script scans only direct child folders for `SKILL.md`, skips internal `.agents/skills` entries and other artefacts, keeps the descriptions already written in the README, derives a description from `SKILL.md` for new skills, and rewrites the marked README table.
+The script scans only the direct child folders of `skills/` for `SKILL.md`, skips internal `.agents/skills` entries and other artefacts, keeps the descriptions already written in the README, derives a description from `SKILL.md` for new skills, and rewrites the marked README table.
 
 After running it, inspect `README.md`. If an auto-generated description is too long or too generic, refine the README entry by hand: the script keeps it on the next run.
 

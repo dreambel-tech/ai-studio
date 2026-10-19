@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Update the root README skill index for the agents-skills repository."""
+"""Update the root README skill index for the ai-studio repository."""
 
 from __future__ import annotations
 
@@ -10,6 +10,7 @@ from pathlib import Path
 
 START = "<!-- agents-skills:index:start -->"
 END = "<!-- agents-skills:index:end -->"
+SKILLS_DIR = "skills"
 SKIP_DIRS = {".git", ".codex", "node_modules", "__pycache__"}
 
 
@@ -72,7 +73,10 @@ def find_skill_entries(
     existing_by_link: dict[str, str],
 ) -> list[tuple[str, str, str]]:
     entries: list[tuple[str, str, str]] = []
-    for skill_dir in sorted(repo_root.iterdir(), key=lambda path: path.name.lower()):
+    skills_root = repo_root / SKILLS_DIR
+    if not skills_root.is_dir():
+        return entries
+    for skill_dir in sorted(skills_root.iterdir(), key=lambda path: path.name.lower()):
         if not skill_dir.is_dir():
             continue
         if skill_dir.name in SKIP_DIRS or skill_dir.name.startswith(".codex-"):
@@ -139,7 +143,7 @@ def main() -> None:
         "--repo-root",
         type=Path,
         default=Path.cwd(),
-        help="Path to the agents-skills repository root.",
+        help="Path to the ai-studio repository root.",
     )
     args = parser.parse_args()
 
