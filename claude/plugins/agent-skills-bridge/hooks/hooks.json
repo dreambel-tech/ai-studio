@@ -1,0 +1,15 @@
+{
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "exec sh \"${CLAUDE_PLUGIN_ROOT}/hooks/link-skills.sh\"; powershell -NoProfile -NonInteractive -ExecutionPolicy Bypass -File \"${CLAUDE_PLUGIN_ROOT}/hooks/link-skills.ps1\"",
+            "timeout": 30
+          }
+        ]
+      }
+    ]
+  }
+}
