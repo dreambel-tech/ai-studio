@@ -6,11 +6,12 @@ agent tool, plus thin adapters for the tools that can do more.
 ## Layout
 
 ```
-skills/          Agent Skills (SKILL.md), for any agent tool
-instructions/    Lines to add to your agent instruction files (AGENTS.md, CLAUDE.md)
-claude/plugins/  Claude Code plugins
-codex/           Codex adapters
-tests/           Tests for the scripts shared by several adapters
+skills/             Agent Skills (SKILL.md), for any agent tool
+instructions/       Lines to add to your agent instruction files (AGENTS.md, CLAUDE.md)
+claude/plugins/     Claude Code plugins
+claude/statusline/  Claude Code status line
+codex/              Codex adapters
+tests/              Tests for the scripts shared by several adapters
 ```
 
 The shared parts, `skills/` and `instructions/`, name no agent tool. Each tool folder only adds
@@ -46,6 +47,10 @@ project, or install them all as a Claude Code plugin (below).
 | `studio-skills` | Every skill in `skills/`, as Claude Code skills. |
 | [agent-skills-bridge](claude/plugins/agent-skills-bridge/) | Links a project's `.claude/skills` to its `.agents/skills`, so Claude Code sees the same skills as other agent tools. |
 | [context-gauge](claude/plugins/context-gauge/) | Tells the session once per level when its context grows heavy, so it can offer a fresh session. |
+
+In the terminal, the [context-line](claude/statusline/) status line also shows the context size in
+the footer, dim while the session is light and coloured once it is heavy. A plugin cannot set a
+status line, so it goes in your settings.
 
 Install a plugin in one step (Claude Code 2.1.275 or later):
 
