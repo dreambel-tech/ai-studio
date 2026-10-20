@@ -369,6 +369,24 @@ export function pathsIn(text, cwd) {
   return found;
 }
 
+// The branches a command creates: git switch -c, git checkout -b, git worktree add -b
+// and git branch <name>, with or without git -C <folder> and quotes.
+export function branchesIn(text) {
+  const found = new Set();
+  const patterns = [
+    /\bgit(?:\s+-C\s+(?:"[^"]*"|'[^']*'|\S+))?\s+(?:switch|checkout)\b[^\n;&|]*?\s-[cCbB]\s+\\?["']?([\w./@+-]+)/g,
+    /\bgit(?:\s+-C\s+(?:"[^"]*"|'[^']*'|\S+))?\s+worktree\s+add\b[^\n;&|]*?\s-[bB]\s+\\?["']?([\w./@+-]+)/g,
+    /\bgit(?:\s+-C\s+(?:"[^"]*"|'[^']*'|\S+))?\s+branch\s+\\?["']?(?!-)([\w./@+-]+)/g,
+  ];
+  for (const pattern of patterns) {
+    for (const match of String(text).matchAll(pattern)) {
+      const name = match[1].replace(/[./]+$/, "");
+      if (/^\w/.test(name)) found.add(name);
+    }
+  }
+  return found;
+}
+
 function addCall(history, name, input, cwd) {
   if (typeof input === "string") {
     try {
@@ -390,13 +408,14 @@ function addCall(history, name, input, cwd) {
   for (const text of texts) {
     for (const match of text.matchAll(/^\*\*\* (?:Add|Update) File: (.+)$/gm)) if (base || isAbsolute(match[1].trim())) history.written.add(resolve(base || "", match[1].trim()));
     for (const path of pathsIn(text, base)) history.mentions.add(path);
+    for (const branch of branchesIn(text)) history.branches.add(branch);
   }
 }
 
 // What a session did, from its history: when it started, the folders it worked in,
 // the files it wrote, the paths its commands named, and the files it published.
 export function readHistory(path) {
-  const history = { file: path, start: null, cwds: new Set(), written: new Set(), mentions: new Set(), published: new Set() };
+  const history = { file: path, start: null, cwds: new Set(), written: new Set(), mentions: new Set(), published: new Set(), branches: new Set() };
   historyFiles(path).forEach((file, index) => {
     let cwd = null;
     for (const line of readLines(file)) {
@@ -515,6 +534,15 @@ function worktreeItems(repo, ctx) {
   return items;
 }
 
+// A branch is this session's if its history creates it and the branch was created
+// after the session started (by its reflog), so an older branch of the same name is not.
+function ownBranch(repo, name, ctx) {
+  if (!ctx.branches.has(name) || ctx.since == null) return false;
+  const last = lines(git(repo.main, ["log", "-g", "--date=unix", "--format=%gd", `refs/heads/${name}`, "--"])).pop();
+  const created = last && /@\{(\d+)\}$/.exec(last);
+  return Boolean(created) && Number(created[1]) * 1000 >= ctx.since - EVIDENCE_MARGIN;
+}
+
 function branchItems(repo, ctx) {
   const checkedOut = new Set(repo.worktrees.filter((worktree) => worktree.branch).map((worktree) => worktree.branch));
   const groups = new Map();
@@ -522,7 +550,7 @@ function branchItems(repo, ctx) {
     if (branch.name === repo.defaultBranch || checkedOut.has(branch.name)) continue;
     const merge = mergeOf(repo, branch.name, branch.tip);
     if (!merge.merged) continue;
-    const owner = ctx.since != null && branch.date >= ctx.since ? "window" : "backlog";
+    const owner = ownBranch(repo, branch.name, ctx) ? "session" : ctx.since != null && branch.date >= ctx.since ? "window" : "backlog";
     if (owner === "backlog" && !ctx.audit) {
       ctx.backlog.branches++;
       continue;
@@ -714,6 +742,7 @@ function makeContext(options) {
     published: (options.published || []).map((path) => resolve(cwd, path)),
     named: (options.named || []).map((path) => resolve(cwd, path)),
     found: (options.found || []).map((path) => resolve(cwd, path)),
+    branches: new Set(options.branches || []),
     history: options.history ? resolve(cwd, options.history) : null,
     audit: Boolean(options.audit),
     activeMs: (options.activeHours ?? DEFAULT_ACTIVE_HOURS) * HOUR,
@@ -726,7 +755,7 @@ function makeContext(options) {
 export function scan(options = {}) {
   const historyFile = options.history ? resolve(options.cwd || process.cwd(), options.history) : null;
   const history = historyFile && existsSync(historyFile) ? readHistory(historyFile) : null;
-  const ctx = makeContext({ ...options, history: history ? history.file : null, since: options.since ?? (history ? history.start : null), published: history ? [...history.published] : [] });
+  const ctx = makeContext({ ...options, history: history ? history.file : null, since: options.since ?? (history ? history.start : null), published: history ? [...history.published] : [], branches: history ? [...history.branches] : [] });
   if (historyFile && !history) ctx.notes.push(`History file not found: ${historyFile}`);
   const worked = history ? [...history.cwds].filter((dir) => existsSync(dir)) : [];
   const repos = findRepos(ctx.cwd, [...(options.repos || []), ...worked]).map(readRepo);
@@ -772,6 +801,7 @@ export function scan(options = {}) {
     published: ctx.published,
     named: ctx.named,
     found: ctx.found,
+    branches: [...ctx.branches],
     audit: ctx.audit,
     activeHours: ctx.activeMs / HOUR,
     repos: repos.map((repo) => repo.main),

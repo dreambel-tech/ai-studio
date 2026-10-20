@@ -76,7 +76,9 @@ not be read, and claimed changes to tracked files (restoring them discards the c
 
 From the session history, a path counts as the session's only if it still exists and appeared
 after the session started. Inside a repository, only ignored files count, such as a copied `.env`:
-tracked files and new files are the work itself. A folder that commands only named, without the
+tracked files and new files are the work itself. A merged branch counts if the history creates it
+(`git switch -c`, `git checkout -b`, `git worktree add -b`, `git branch <name>`) and its reflog
+shows it was created after the session started. A folder that commands only named, without the
 session writing into it, is left unchecked, since it may hold more than the session's files. Files
 sent to a tool that publishes pages or documents are kept, and so is the history with its folder.
 
