@@ -10,7 +10,7 @@
       "name": "studio-skills",
       "source": "./",
       "strict": false,
-      "description": "Every skill in the ai-studio skills folder, as Claude Code skills: meaning-first design, delivery with evidence, code coherence, React SCSS architecture and session relay."
+      "description": "Every skill in the ai-studio skills folder, as Claude Code skills: meaning-first design, delivery with evidence, code coherence, React SCSS architecture, session relay and session cleanup."
     },
     {
       "name": "agent-skills-bridge",

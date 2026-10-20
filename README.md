@@ -11,7 +11,7 @@ instructions/       Lines to add to your agent instruction files (AGENTS.md, CLA
 claude/plugins/     Claude Code plugins
 claude/statusline/  Claude Code status line
 codex/              Codex adapters
-tests/              Tests for the scripts shared by several adapters
+tests/              Tests for the scripts in skills/ and in the adapters
 ```
 
 The shared parts, `skills/` and `instructions/`, name no agent tool. Each tool folder only adds
@@ -27,6 +27,7 @@ the shared parts works without the adapters.
 | [dreambel-deliver-with-evidence](skills/dreambel-deliver-with-evidence/) | Evidence-first delivery for complex changes |
 | [meaning-first-design](skills/meaning-first-design/) | Avoid generic AI-looking interfaces by letting the meaning of the project drive every design choice |
 | [react-scss-architecture](skills/react-scss-architecture/) | React architecture with strict TypeScript and global SCSS |
+| [session-cleanup](skills/session-cleanup/) | Clean up after each unit of work: list what the session left, with sizes, remove only what you pick |
 | [session-relay](skills/session-relay/) | Keep long sessions affordable: assess their weight, offer to compact or start fresh, write the relay brief |
 <!-- agents-skills:index:end -->
 
@@ -39,6 +40,7 @@ project, or install them all as a Claude Code plugin (below).
 | File | Purpose |
 | --- | --- |
 | [session-relay.md](instructions/session-relay.md) | Makes every session assess its own weight at natural breaks. |
+| [session-cleanup.md](instructions/session-cleanup.md) | Makes every session clean up what it left behind at the end of each unit of work. |
 
 ## Claude Code
 
