@@ -6,7 +6,7 @@ import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, 
 import { basename, dirname, join, resolve, sep } from "node:path";
 import { tmpdir } from "node:os";
 import { fileURLToPath } from "node:url";
-import { SECRET_FILE, formatBytes, isInside, parseDockerSize, parseStatus, pathsIn, samePath } from "../skills/session-cleanup/scripts/leftovers.mjs";
+import { SECRET_FILE, branchesIn, formatBytes, isInside, parseDockerSize, parseStatus, pathsIn, samePath } from "../skills/session-cleanup/scripts/leftovers.mjs";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
 const SCRIPT = join(ROOT, "skills", "session-cleanup", "scripts", "leftovers.mjs");
@@ -443,4 +443,38 @@ test("a worktree named in a launch configuration is left unchecked, and missing 
   const [reference] = byKind(plan, "reference");
   assert.ok(samePath(reference.target, join(paths.repo, "gone-folder")));
   assert.equal(reference.action, "report");
+});
+
+test("a merged branch that the session's history created is its own", () => {
+  const { dir, paths, scan, started } = sharedFixture();
+  const history = join(dir, "branches.jsonl");
+  write(history, [
+    JSON.stringify({ type: "queue-operation", timestamp: new Date(started).toISOString() }),
+    claudeCall(paths.repo, "Bash", { command: "git switch -c old-a && git switch main" }),
+    "",
+  ].join("\n"));
+  const groups = byKind(scan(["--history", history]), "branches");
+  const own = groups.find((group) => group.owner === "session");
+  assert.deepEqual(memberNames(own), ["old-a"]);
+  assert.equal(own.selected, true);
+  // sq was created while the session ran, but its history does not create it.
+  assert.ok(groups.some((group) => group.owner === "window" && memberNames(group).includes("sq")));
+});
+
+test("a branch of the same name created before the session started is not its own", () => {
+  const { dir, paths, scan } = sharedFixture();
+  const history = join(dir, "branches-later.jsonl");
+  const later = new Date(Date.now() + 3_600_000).toISOString();
+  write(history, JSON.stringify({ type: "queue-operation", timestamp: later }) + "\n" + claudeCall(paths.repo, "Bash", { command: "git switch -c old-a" }) + "\n");
+  const plan = scan(["--history", history]);
+  assert.ok(!byKind(plan, "branches").some((group) => group.owner === "session"));
+});
+
+test("finds the branches a command creates", () => {
+  const found = (text) => [...branchesIn(text)].sort();
+  assert.deepEqual(found('git switch -c feat/a && git checkout -b "fix-b"'), ["feat/a", "fix-b"]);
+  assert.deepEqual(found("git -C 'C:/a b' worktree add ../w -b claude/c"), ["claude/c"]);
+  assert.deepEqual(found("git branch d main; git branch -D e; git branch --format=x; git branch && ls"), ["d"]);
+  assert.deepEqual(found(String.raw`await tools.exec_command({cmd:"git switch -c \"g-1\""})`), ["g-1"]);
+  assert.deepEqual(found("git checkout main && git switch feature"), []);
 });
