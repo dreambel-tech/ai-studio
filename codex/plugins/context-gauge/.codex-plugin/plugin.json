@@ -1,0 +1,19 @@
+{
+  "name": "context-gauge",
+  "version": "0.3.2",
+  "description": "Tells the session once per level when its context grows heavy (60% and 80% of the window by default), so it can offer a fresh session from a relay brief at the next natural break. Never blocks.",
+  "keywords": ["context", "tokens", "usage", "session", "handoff"],
+  "author": {
+    "name": "Dreambel Tech",
+    "url": "https://github.com/dreambel-tech"
+  },
+  "homepage": "https://github.com/dreambel-tech/ai-studio/tree/main/codex/plugins/context-gauge",
+  "repository": "https://github.com/dreambel-tech/ai-studio",
+  "license": "MIT",
+  "interface": {
+    "displayName": "Context Gauge",
+    "shortDescription": "Warns once per level when the session context grows heavy",
+    "developerName": "Dreambel Tech",
+    "category": "Developer Tools"
+  }
+}
