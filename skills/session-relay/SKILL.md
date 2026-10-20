@@ -70,18 +70,20 @@ How each move is offered:
 - **Fresh session**: if the tool can start one for the user, a short button label such as "New
   session"; otherwise one sentence.
 - **Compact**: in most tools only the user can run the compaction command, so give it ready to copy
-  on one line. Tools differ in what they do with text after the command: some use it to steer the
-  summary, others compact and then send it as the user's next message (the Claude desktop app does
-  this). Write that text so both work: one imperative line, at most 30 words, that names where the
-  work stands and the next step the user already decided, such as
-  `/compact Continue Kura+ batch 2: C2 is integrated; next, the guardian review, then the PRs.`
-  It is sent in the user's name, so put in it only what the user has already decided; never a new
-  action or approval. If there is no agreed next step, give the bare command (`/compact`).
+  on one line. Compacting only compacts: it does not start the next step, so the user sends one
+  short message afterwards (such as "continue") to pick the work up. When the command takes
+  instructions for the summary (Claude Code: `/compact <instructions>`), add one clear line, at most
+  30 words, naming where the work stands and the next step the user already decided, so the summary
+  carries it, such as
+  `/compact Kura+ batch 2: C2 is integrated; next, the guardian review, then the PRs.`
+  Use full words, not shorthand, and only what the user has already decided. Otherwise, or if there
+  is no agreed next step, give the bare command (Codex: `/compact`).
 
 Wording: the fact and the benefit, in the user's language, with no alarm and no apology. At most 25
 words besides the command, no heading, no bold, no list, and no explanation of how the gauge or this
-skill works. For example: "This session is heavy (about 300k of context); compacting would keep the
-thread, cost much less per step, then continue with:" followed by the command on its own line.
+skill works. Say once that a short message after compacting resumes the work. For example: "This
+session is heavy (about 300k of context); compacting keeps the thread for much less per step. Then
+send 'continue':" followed by the command on its own line.
 
 Then stop. Do not repeat the offer until the session reaches the next level or the user brings it
 up. If the user wants to keep going as is, keep going.
@@ -113,9 +115,8 @@ Rules for the brief and the focus:
 
 ## 5. Hand over
 
-- **Compaction**: once the user has compacted, continue from the summary. If the line after the
-  command arrives as a message, treat it as the user's next step. Re-read only the files the next
-  step needs.
+- **Compaction**: once the user has compacted and sent their next message, continue from the
+  summary with the next step it names. Re-read only the files that step needs.
 - **Fresh session**: if the agent tool can start a new session or thread with a prompt, start it
   with the brief as its first message, and tell the user where to find it. Otherwise, give the
   brief in one fenced block, ready to paste into a new session of any agent tool. Save it to a file

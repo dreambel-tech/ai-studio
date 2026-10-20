@@ -117,9 +117,9 @@ export function message({ tokens, window }, level, notifyUser) {
     "Every step now re-reads all of it. Do not interrupt the current task for this. " +
     "At the next natural break (a batch delivered, a pull request opened, a report sent), offer one move, once: " +
     "compacting here if the same task or thread continues (only the user can run the compaction command, so give it " +
-    "ready to copy on one line; some tools send the text after it as the user's next message, so make that text one " +
-    "imperative line naming where the work stands and the next step the user already decided, or give the bare " +
-    "command if there is none), or a fresh session from a relay " +
+    "ready to copy on one line; if it takes instructions for the summary, add one clear line in full words naming where " +
+    "the work stands and the next step the user already decided, otherwise give the bare command; compacting does not " +
+    "resume the work, so say once that a short message such as 'continue' picks it up), or a fresh session from a relay " +
     "brief if the topic changes or the session was already compacted twice. Put the offer in the agent tool's next-step " +
     "box or suggestion buttons if it has them and add nothing to your text; otherwise put it on the last line of your " +
     "report after a blank line, in at most 25 words in the user's language besides the command. No heading, no bold, " +
