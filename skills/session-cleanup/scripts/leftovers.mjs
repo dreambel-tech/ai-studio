@@ -1,14 +1,16 @@
 #!/usr/bin/env node
 // leftovers: lists what agent sessions left on this computer (worktrees, merged
-// branches, browser profiles, files a session says it created) with their size,
+// branches, browser profiles, files a session created, from what it says or from its
+// history) with their size,
 // and removes only the items the user picked. Scanning is read-only. Removal
 // checks every item again first and never touches one with a reason to keep it.
 // Run with --help for the commands. See ../SKILL.md.
 
 import { spawnSync } from "node:child_process";
-import { existsSync, lstatSync, mkdirSync, readdirSync, readFileSync, rmSync, statfsSync, statSync, writeFileSync } from "node:fs";
+import { closeSync, existsSync, lstatSync, mkdirSync, openSync, readdirSync, readFileSync, readSync, rmSync, statfsSync, statSync, writeFileSync } from "node:fs";
 import { basename, dirname, isAbsolute, join, parse as parsePath, relative, resolve } from "node:path";
 import { homedir, tmpdir } from "node:os";
+import { StringDecoder } from "node:string_decoder";
 import { fileURLToPath, pathToFileURL } from "node:url";
 
 const WINDOWS = process.platform === "win32";
@@ -30,11 +32,14 @@ export const TEMP_PATTERNS = [
 export const SECRET_FILE = /^\.env(\.(?!(example|sample|template|dist)$)[\w.-]+)?$/i;
 
 const USAGE = `Usage:
-  node leftovers.mjs scan [--since <time>] [--claim <path>]... [--repo <path>]... [--audit] [--json]
-                          [--active-hours <n>] [--size-seconds <n>]
+  node leftovers.mjs scan [--history <file>] [--since <time>] [--claim <path>]... [--repo <path>]...
+                          [--audit] [--json] [--active-hours <n>] [--size-seconds <n>]
   node leftovers.mjs remove --plan <file> (<id>... | selected) [--json]
 
 scan lists what was left behind and saves a plan file; it changes nothing.
+  --history       the session's history file (a JSONL transcript or rollout): what the
+                  session wrote or named and that appeared after it started is listed as
+                  this session's, the files it published are kept, and it gives --since
   --since         when this session started (ISO date or epoch ms): what appeared later
                   is listed as "created while this session ran"
   --claim         a path this session created (repeatable): listed as this session's
@@ -266,6 +271,8 @@ function protectedReason(path, ctx, repos) {
   if (samePath(parsePath(full).root, full)) return "a drive root";
   if ([homedir(), tmpdir(), ctx.tempRoot].some((dir) => samePath(dir, full))) return "a system folder";
   if (isInside(ctx.cwd, full)) return "contains the current folder";
+  if (ctx.history && isInside(ctx.history, full)) return "holds the session history";
+  if (ctx.history && isInside(full, historyFolder(ctx.history))) return "part of the session history";
   if (basename(full).toLowerCase() === ".git") return "a git folder";
   for (const repo of repos) {
     if (isInside(repo.main, full)) return "contains a repository";
@@ -274,11 +281,199 @@ function protectedReason(path, ctx, repos) {
   return null;
 }
 
+function publishedIn(path, ctx) {
+  return ctx.published.some((source) => isInside(source, path));
+}
+
+// ---------------------------------------------------------------- session history
+
+// The history of a session is the agent tool's log of its tool calls, one JSON object
+// per line. Two shapes are read: assistant messages holding "tool_use" parts, and
+// "response_item" entries holding function or custom tool calls. Anything else is skipped.
+const HISTORY_ENTRY = /"tool_use"|"function_call"|"custom_tool_call"|"local_shell_call"|"session_meta"|"turn_context"/;
+const CONTENT_FIELDS = new Set(["content", "new_string", "old_string", "new_source", "edits"]);
+// Something the session named counts as its own only if it appeared after the session
+// started; the margin covers a worktree or folder made just before the first entry.
+const EVIDENCE_MARGIN = 15 * 60_000;
+
+function* readLines(path) {
+  const fd = openSync(path, "r");
+  try {
+    const buffer = Buffer.alloc(8 * 1024 * 1024);
+    const decoder = new StringDecoder("utf8");
+    let rest = "";
+    let bytes;
+    while ((bytes = readSync(fd, buffer, 0, buffer.length, null)) > 0) {
+      const parts = (rest + decoder.write(buffer.subarray(0, bytes))).split("\n");
+      rest = parts.pop();
+      yield* parts;
+    }
+    rest += decoder.end();
+    if (rest) yield rest;
+  } finally {
+    closeSync(fd);
+  }
+}
+
+// The folder named after a history file, where an agent tool may keep the session's
+// other records, such as the histories of its sub-agents.
+function historyFolder(path) {
+  return join(dirname(path), basename(path).replace(/\.jsonl$/i, ""));
+}
+
+function historyFiles(path) {
+  const files = [path];
+  const walk = (dir) => {
+    let entries = [];
+    try {
+      entries = readdirSync(dir, { withFileTypes: true });
+    } catch {}
+    for (const entry of entries) {
+      if (entry.isDirectory()) walk(join(dir, entry.name));
+      else if (entry.name.endsWith(".jsonl")) files.push(join(dir, entry.name));
+    }
+  };
+  walk(historyFolder(path));
+  return files;
+}
+
+function stringsOf(value, out = []) {
+  if (typeof value === "string") out.push(value);
+  else if (Array.isArray(value)) value.forEach((entry) => stringsOf(entry, out));
+  else if (value && typeof value === "object") for (const [name, entry] of Object.entries(value)) if (!CONTENT_FIELDS.has(name)) stringsOf(entry, out);
+  return out;
+}
+
+// The paths a command or a piece of code names: absolute, relative to the folder it
+// ran in, quoted or not, including Git Bash paths (/c/...) and paths escaped in code.
+export function pathsIn(text, cwd) {
+  const found = new Set();
+  const source = String(text).replace(/\\\\/g, "\\");
+  const tokens = [];
+  for (const match of source.matchAll(/"([^"\n]{2,})"|'([^'\n]{2,})'|`([^`\n]{2,})`/g)) tokens.push(match[1] ?? match[2] ?? match[3]);
+  tokens.push(...source.split(/[\s"'`;&|()<>{}[\],=]+/));
+  for (let token of tokens) {
+    token = token.trim().replace(/[.,:]+$/, "");
+    if (token.length < 2 || /[$*?%\n]/.test(token) || /^[a-z][\w+.-]*:\/\//i.test(token)) continue;
+    if (WINDOWS) {
+      const msys = /^\/([a-zA-Z])(\/.*)?$/.exec(token);
+      if (msys) token = `${msys[1].toUpperCase()}:${msys[2] || "/"}`;
+    }
+    if (!/[\\/]/.test(token) && !SECRET_FILE.test(token)) continue;
+    if (!isAbsolute(token) && !cwd) continue;
+    found.add(resolve(cwd || "", token));
+  }
+  return found;
+}
+
+function addCall(history, name, input, cwd) {
+  if (typeof input === "string") {
+    try {
+      const parsed = JSON.parse(input);
+      if (parsed && typeof parsed === "object") input = parsed;
+    } catch {}
+  }
+  let base = cwd;
+  if (input && typeof input === "object") {
+    const dir = typeof input.workdir === "string" ? input.workdir : typeof input.cwd === "string" ? input.cwd : null;
+    if (dir) base = resolve(base || "", dir);
+  }
+  const texts = typeof input === "string" ? [input] : stringsOf(input);
+  if (/artifact|publish/i.test(String(name))) {
+    for (const text of texts) for (const path of pathsIn(text, base)) history.published.add(path);
+    return;
+  }
+  if (input && typeof input === "object" && typeof input.file_path === "string" && base) history.written.add(resolve(base, input.file_path));
+  for (const text of texts) {
+    for (const match of text.matchAll(/^\*\*\* (?:Add|Update) File: (.+)$/gm)) if (base || isAbsolute(match[1].trim())) history.written.add(resolve(base || "", match[1].trim()));
+    for (const path of pathsIn(text, base)) history.mentions.add(path);
+  }
+}
+
+// What a session did, from its history: when it started, the folders it worked in,
+// the files it wrote, the paths its commands named, and the files it published.
+export function readHistory(path) {
+  const history = { file: path, start: null, cwds: new Set(), written: new Set(), mentions: new Set(), published: new Set() };
+  historyFiles(path).forEach((file, index) => {
+    let cwd = null;
+    for (const line of readLines(file)) {
+      if (index === 0 && history.start == null) {
+        const time = /"timestamp":"([^"]+)"/.exec(line);
+        if (time && Number.isFinite(Date.parse(time[1]))) history.start = Date.parse(time[1]);
+      }
+      if (!HISTORY_ENTRY.test(line)) continue;
+      const entry = parse(line);
+      if (!entry) continue;
+      const payload = entry.payload || {};
+      if (entry.type === "session_meta" || entry.type === "turn_context") {
+        if (typeof payload.cwd === "string") history.cwds.add((cwd = resolve(payload.cwd)));
+        const started = Date.parse(payload.timestamp);
+        if (index === 0 && entry.type === "session_meta" && Number.isFinite(started)) history.start = Math.min(history.start ?? Infinity, started);
+      } else if (entry.type === "assistant" && entry.message && Array.isArray(entry.message.content)) {
+        if (typeof entry.cwd === "string") history.cwds.add((cwd = resolve(entry.cwd)));
+        for (const part of entry.message.content) if (part && part.type === "tool_use") addCall(history, part.name, part.input, cwd);
+      } else if (entry.type === "response_item") {
+        if (payload.type === "function_call") addCall(history, payload.name, payload.arguments, cwd);
+        else if (payload.type === "custom_tool_call") addCall(history, payload.name, payload.input, cwd);
+        else if (payload.type === "local_shell_call") addCall(history, "shell", payload.action, cwd);
+      }
+    }
+  });
+  return history;
+}
+
+function parse(line) {
+  try {
+    return JSON.parse(line);
+  } catch {
+    return null;
+  }
+}
+
+// The paths of the history that this session left: they exist and appeared after it
+// started. A worktree counts. Inside a repository, only ignored files do (a copied
+// .env): tracked and new files are the work itself, and folders may be build output.
+// Elsewhere, only what lies in the temporary folder counts: a file written anywhere
+// else, such as a report or a note, is most likely meant to stay.
+function historyClaims(history, ctx, repos) {
+  const floor = (ctx.since ?? history.start ?? 0) - EVIDENCE_MARGIN;
+  const roots = repos.flatMap((repo) => repo.worktrees.filter((worktree) => !worktree.bare).map((worktree) => worktree.path));
+  const statuses = new Map();
+  const ignored = (root, path) => {
+    if (!statuses.has(key(root))) statuses.set(key(root), parseStatus(git(root, ["status", "--porcelain=v1", "--ignored", "-z"]) || ""));
+    const rel = relative(root, path).split("\\").join("/");
+    return statuses.get(key(root)).some((entry) => entry.code === "!!" && (entry.path === rel || (entry.path.endsWith("/") && rel.startsWith(entry.path))));
+  };
+  const seen = new Set();
+  const found = [];
+  for (const path of [...history.written, ...history.mentions]) {
+    if (seen.has(key(path))) continue;
+    seen.add(key(path));
+    const st = stat(path);
+    if (!st || st.isSymbolicLink() || (st.birthtimeMs || st.mtimeMs) < floor) continue;
+    if (samePath(path, history.file) || isInside(path, planDir())) continue;
+    if (roots.some((root) => samePath(root, path))) {
+      found.push({ path, root: true });
+      continue;
+    }
+    if (protectedReason(path, ctx, repos)) continue;
+    const inTemp = [ctx.tempRoot, tmpdir()].some((dir) => isInside(path, dir));
+    const root = roots.find((other) => isInside(path, other)) || (inTemp ? toplevelOf(path) : null);
+    if (root ? st.isDirectory() || !ignored(root, path) : !inTemp) continue;
+    // A folder that a command only named may hold more than the session's own files.
+    found.push({ path, named: st.isDirectory() && !history.written.has(path) });
+  }
+  // A folder the session created holds what it wrote inside; a worktree is listed apart.
+  found.sort((a, b) => a.path.length - b.path.length);
+  return found.filter(({ path }, i) => !found.slice(0, i).some((other) => !other.root && isInside(path, other.path)));
+}
+
 export function inspectWorktree(repo, worktree, ctx, owner, created) {
   const item = { kind: "worktree", repo: repo.main, path: worktree.path, branch: worktree.branch, tip: worktree.head, owner, created, action: "remove" };
   item.label = `${display(worktree.path, ctx)} (${worktree.branch || "detached"})`;
   const keep = (reason) => Object.assign(item, { keep: reason });
   if (isInside(ctx.cwd, worktree.path)) return keep("the current folder");
+  if (publishedIn(worktree.path, ctx)) return keep("holds the source of a published page");
   if (worktree.locked) return keep("locked");
   const status = git(worktree.path, ["status", "--porcelain=v1", "--ignored", "-z"]);
   if (status === null) return keep("git cannot read it");
@@ -388,10 +583,13 @@ function inspectClaim(path, ctx, repos) {
       return { ...item, kind: "change", action: "restore", repo: top, choose: "restoring discards its uncommitted changes" };
     }
   }
+  if (publishedIn(path, ctx)) return { ...item, keep: "source of a published page" };
   const guard = protectedReason(path, ctx, repos);
   if (guard) return { ...item, keep: guard };
-  if (ctx.since != null && item.created < ctx.since) return { ...item, keep: "existed before this session" };
+  const margin = ctx.found.some((found) => samePath(found, path)) ? EVIDENCE_MARGIN : 0;
+  if (ctx.since != null && item.created < ctx.since - margin) return { ...item, keep: "existed before this session" };
   if (SECRET_FILE.test(basename(path))) return { ...item, choose: "may hold secrets" };
+  if (ctx.named.some((named) => samePath(named, path))) return { ...item, choose: "named by this session's commands: check that nothing else uses it" };
   return item;
 }
 
@@ -478,6 +676,10 @@ function makeContext(options) {
     cwd,
     since: options.since ?? null,
     claims: (options.claims || []).map((claim) => resolve(cwd, claim)),
+    published: (options.published || []).map((path) => resolve(cwd, path)),
+    named: (options.named || []).map((path) => resolve(cwd, path)),
+    found: (options.found || []).map((path) => resolve(cwd, path)),
+    history: options.history ? resolve(cwd, options.history) : null,
     audit: Boolean(options.audit),
     activeMs: (options.activeHours ?? DEFAULT_ACTIVE_HOURS) * HOUR,
     tempRoot: resolve(process.env.LEFTOVERS_TEMP || tmpdir()),
@@ -487,8 +689,20 @@ function makeContext(options) {
 }
 
 export function scan(options = {}) {
-  const ctx = makeContext(options);
-  const repos = findRepos(ctx.cwd, options.repos).map(readRepo);
+  const historyFile = options.history ? resolve(options.cwd || process.cwd(), options.history) : null;
+  const history = historyFile && existsSync(historyFile) ? readHistory(historyFile) : null;
+  const ctx = makeContext({ ...options, history: history ? history.file : null, since: options.since ?? (history ? history.start : null), published: history ? [...history.published] : [] });
+  if (historyFile && !history) ctx.notes.push(`History file not found: ${historyFile}`);
+  const worked = history ? [...history.cwds].filter((dir) => existsSync(dir)) : [];
+  const repos = findRepos(ctx.cwd, [...(options.repos || []), ...worked]).map(readRepo);
+  if (history) {
+    for (const { path, named } of historyClaims(history, ctx, repos)) {
+      if (ctx.claims.some((claim) => samePath(claim, path))) continue;
+      ctx.claims.push(path);
+      ctx.found.push(path);
+      if (named) ctx.named.push(path);
+    }
+  }
   for (const repo of repos) {
     if (!repo.ref) ctx.notes.push(`${repo.name}: no default branch found, so no branch counts as merged.`);
   }
@@ -517,7 +731,11 @@ export function scan(options = {}) {
     created: new Date().toISOString(),
     cwd: ctx.cwd,
     since: ctx.since,
+    history: history ? history.file : null,
     claims: ctx.claims,
+    published: ctx.published,
+    named: ctx.named,
+    found: ctx.found,
     audit: ctx.audit,
     activeHours: ctx.activeMs / HOUR,
     repos: repos.map((repo) => repo.main),
@@ -546,7 +764,7 @@ function localTime(ms) {
 export function render(plan, planFile) {
   const out = [];
   const since = plan.since != null ? ` since ${localTime(plan.since)}` : "";
-  out.push(`Leftovers${since} in ${plan.repos.map((repo) => basename(repo)).join(", ") || "no repository"}`);
+  out.push(`Leftovers${since} in ${plan.repos.map((repo) => basename(repo)).join(", ") || "no repository"}${plan.history ? ", from the session history" : ""}`);
   const line = (item, mark) => {
     const size = formatBytes(item.bytes, item.partial);
     const note = item.keep || item.choose || item.hint || "";
@@ -597,7 +815,7 @@ function savePlan(plan) {
 // ---------------------------------------------------------------- removal
 
 function freshContext(plan) {
-  const ctx = makeContext({ cwd: plan.cwd, since: plan.since, claims: plan.claims, audit: true, activeHours: plan.activeHours });
+  const ctx = makeContext({ cwd: plan.cwd, since: plan.since, claims: plan.claims, published: plan.published, named: plan.named, found: plan.found, history: plan.history, audit: true, activeHours: plan.activeHours });
   ctx.tempRoot = plan.tempRoot;
   return ctx;
 }
@@ -763,6 +981,7 @@ export function parseArgs(argv) {
       if (!Number.isFinite(time)) throw new Error(`--since: not a date: ${raw}`);
       options.since = time;
     } else if (arg === "--claim") options.claims.push(value());
+    else if (arg === "--history") options.history = value();
     else if (arg === "--repo") options.repos.push(value());
     else if (arg === "--plan") options.plan = value();
     else if (arg === "--active-hours") options.activeHours = Number(value());

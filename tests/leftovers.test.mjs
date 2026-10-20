@@ -3,10 +3,10 @@ import { test, after } from "node:test";
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
 import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
-import { basename, dirname, join } from "node:path";
+import { basename, dirname, join, resolve, sep } from "node:path";
 import { tmpdir } from "node:os";
 import { fileURLToPath } from "node:url";
-import { SECRET_FILE, formatBytes, isInside, parseDockerSize, parseStatus, samePath } from "../skills/session-cleanup/scripts/leftovers.mjs";
+import { SECRET_FILE, formatBytes, isInside, parseDockerSize, parseStatus, pathsIn, samePath } from "../skills/session-cleanup/scripts/leftovers.mjs";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
 const SCRIPT = join(ROOT, "skills", "session-cleanup", "scripts", "leftovers.mjs");
@@ -19,8 +19,10 @@ const pause = (ms) => new Promise((done) => setTimeout(done, ms));
 // A repository with an origin, worktrees and branches in every state the scan tells
 // apart, a fake gh, and a temporary folder holding browser profiles.
 function fixture() {
+  const started = Date.now() - 1000;
   const dir = mkdtempSync(join(tmpdir(), "leftovers-test-"));
   temporary.push(dir);
+  mkdirSync(join(dir, "tmp"));
   const config = join(dir, "gitconfig");
   writeFileSync(config, "[user]\n\tname = Test\n\temail = test@example.com\n[init]\n\tdefaultBranch = main\n[commit]\n\tgpgsign = false\n[core]\n\tautocrlf = false\n");
   const prsFile = join(dir, "prs.json");
@@ -31,6 +33,9 @@ function fixture() {
     GIT_CONFIG_GLOBAL: config,
     GIT_CONFIG_NOSYSTEM: "1",
     LEFTOVERS_TEMP: join(dir, "tmp"),
+    TEMP: join(dir, "tmp"),
+    TMP: join(dir, "tmp"),
+    TMPDIR: join(dir, "tmp"),
     LEFTOVERS_PLAN_DIR: join(dir, "plans"),
     LEFTOVERS_GH: fakeGh,
     LEFTOVERS_DOCKER: "none",
@@ -119,7 +124,7 @@ function fixture() {
     return result.json;
   };
   const remove = (plan, ids) => leftovers(["remove", "--plan", plan.planFile, "--json", ...ids]);
-  return { dir, env, git, paths, scan, remove, leftovers };
+  return { dir, env, git, paths, scan, remove, leftovers, started };
 }
 
 const byPath = (plan, path) => plan.items.find((item) => item.path && samePath(item.path, path));
@@ -329,4 +334,97 @@ test("helpers", () => {
   assert.ok(isInside(join("a", "b", "c"), join("a", "b")));
   assert.ok(!isInside(join("a", "bc"), join("a", "b")));
   if (process.platform === "win32") assert.ok(samePath("C:\\Dev\\X", "c:/dev/x"));
+});
+
+// History lines in the two shapes the script reads.
+const claudeCall = (cwd, name, input) => JSON.stringify({ type: "assistant", cwd, timestamp: new Date().toISOString(), message: { content: [{ type: "tool_use", name, input }] } });
+const write = (path, text = "x\n") => {
+  mkdirSync(dirname(path), { recursive: true });
+  writeFileSync(path, text);
+};
+
+test("reads a session history: what it left in the temporary folder is its own, what it published is kept", () => {
+  const { dir, paths, scan, started } = fixture();
+  const history = join(dir, "history", "session.jsonl");
+  const scratch = join(paths.temp, "scratch");
+  const notes = join(dir, "notes", "report.md");
+  write(join(scratch, "shot.png"));
+  write(join(scratch, "canvas.html"));
+  write(join(paths.temp, "out", "report.txt"));
+  write(notes);
+  write(join(paths.withEnv, ".env.local"), "COPY=1\n");
+  write(join(paths.repo, "new-feature.js"));
+  write(join(history.replace(/\.jsonl$/, ""), "subagents", "agent-1.jsonl"), claudeCall(paths.repo, "Write", { file_path: join(scratch, "from-agent.txt"), content: "x" }) + "\n");
+  write(join(scratch, "from-agent.txt"));
+  write(history, [
+    JSON.stringify({ type: "queue-operation", timestamp: new Date(started).toISOString() }),
+    claudeCall(paths.repo, "Write", { file_path: join(scratch, "shot.png"), content: `see ${join(dir, "not-created")}` }),
+    claudeCall(paths.repo, "Write", { file_path: join(scratch, "canvas.html"), content: "<html>" }),
+    claudeCall(paths.repo, "Write", { file_path: notes, content: "A report meant to stay" }),
+    claudeCall(paths.repo, "Artifact", { file_path: join(scratch, "canvas.html") }),
+    claudeCall(paths.repo, "Bash", { command: `mkdir -p "${join(paths.temp, "out")}" && echo hi > "${join(paths.temp, "out", "report.txt")}"` }),
+    claudeCall(paths.repo, "Bash", { command: `cp .env "${join(paths.withEnv, ".env.local")}" && cd "${paths.mergedA}" && cat app.txt new-feature.js` }),
+    claudeCall(paths.repo, "Bash", { command: `ls "${dirname(history)}" "${join(history.replace(/\.jsonl$/, ""), "subagents")}"` }),
+    "",
+  ].join("\n"));
+
+  const plan = scan(["--history", history]);
+  assert.equal(plan.since, started);
+  const item = (path) => byPath(plan, path);
+  assert.equal(item(join(scratch, "shot.png")).selected, true);
+  assert.equal(item(join(scratch, "from-agent.txt")).owner, "session");
+  assert.equal(item(join(scratch, "canvas.html")).keep, "source of a published page");
+  assert.match(item(join(paths.temp, "out")).choose, /named by this session's commands/);
+  assert.equal(item(join(paths.temp, "out", "report.txt")), undefined); // inside a folder the session created
+  assert.equal(item(join(paths.withEnv, ".env.local")).choose, "may hold secrets");
+  const merged = item(paths.mergedA);
+  assert.equal(merged.owner, "session");
+  assert.equal(merged.selected, true); // the session's own worktree, so recent use does not keep it
+  for (const notListed of [notes, join(paths.repo, "app.txt"), join(paths.repo, "new-feature.js"), dirname(history), join(dir, "not-created")]) {
+    assert.equal(item(notListed), undefined, notListed);
+  }
+});
+
+test("reads a Codex rollout: commands, patches and code that runs commands", () => {
+  const { dir, paths, scan, started } = fixture();
+  const history = join(dir, "rollout.jsonl");
+  write(join(paths.temp, "codex-out", "log.txt"));
+  write(join(paths.temp, "patched.md"));
+  write(join(paths.temp, "from-code.txt"));
+  const escapedInCode = join(paths.temp, "from-code.txt").replace(/\\/g, "\\\\");
+  const item = (payload) => JSON.stringify({ timestamp: new Date().toISOString(), type: "response_item", payload });
+  write(history, [
+    JSON.stringify({ timestamp: new Date(started).toISOString(), type: "session_meta", payload: { timestamp: new Date(started).toISOString(), cwd: paths.repo } }),
+    item({ type: "function_call", name: "shell", arguments: JSON.stringify({ command: ["bash", "-lc", "mkdir codex-out && date > codex-out/log.txt"], workdir: paths.temp }) }),
+    item({ type: "custom_tool_call", name: "apply_patch", input: `*** Begin Patch\n*** Add File: ${join(paths.temp, "patched.md")}\n+hello\n*** End Patch` }),
+    item({ type: "custom_tool_call", name: "exec", input: `await tools.exec_command({cmd:"echo hi > '${escapedInCode}'"});` }),
+    "",
+  ].join("\n"));
+  const plan = scan(["--history", history]);
+  assert.equal(plan.since, started);
+  assert.equal(byPath(plan, join(paths.temp, "patched.md")).selected, true);
+  assert.equal(byPath(plan, join(paths.temp, "from-code.txt")).owner, "session");
+  // The command names the file, relative to its working folder, and not the folder alone.
+  assert.equal(byPath(plan, join(paths.temp, "codex-out", "log.txt")).selected, true);
+});
+
+test("what a session named but that existed before it started is not its own", () => {
+  const { dir, paths, scan } = fixture();
+  const history = join(dir, "later.jsonl");
+  write(join(paths.temp, "scratch", "old.txt"));
+  const later = new Date(Date.now() + 3_600_000).toISOString();
+  write(history, JSON.stringify({ type: "queue-operation", timestamp: later }) + "\n" + claudeCall(paths.repo, "Write", { file_path: join(paths.temp, "scratch", "old.txt") }) + "\n");
+  const plan = scan(["--history", history]);
+  assert.deepEqual(plan.claims, []);
+  assert.equal(byPath(plan, join(paths.temp, "scratch", "old.txt")), undefined);
+});
+
+test("finds the paths a command names", () => {
+  const cwd = resolve(sep);
+  const found = (text) => [...pathsIn(text, join(cwd, "work"))];
+  assert.ok(found(`cat "${join(cwd, "a b", "c.txt")}"`).includes(join(cwd, "a b", "c.txt")));
+  assert.ok(found("cp .env out/.env.local").includes(join(cwd, "work", "out", ".env.local")));
+  assert.ok(found("cp .env out/.env.local").includes(join(cwd, "work", ".env")));
+  assert.deepEqual(found("curl https://example.com/a/b $HOME/x *.log"), []);
+  if (process.platform === "win32") assert.ok(found("rm -rf /c/Users/me/tmp/cdp-1").includes("C:\\Users\\me\\tmp\\cdp-1"));
 });

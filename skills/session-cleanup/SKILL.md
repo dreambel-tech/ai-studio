@@ -28,9 +28,15 @@ another session, uncommitted work or the user still needs.
 Run the script in this skill's folder, from the session's working folder (Node.js required):
 
 ```bash
+node <this skill's folder>/scripts/leftovers.mjs scan --history <session history file>
 node <this skill's folder>/scripts/leftovers.mjs scan --since <session start> --claim <path> ...
 ```
 
+- `--history`: the session's history file, if the agent tool keeps one (a JSONL transcript or
+  rollout) and you know its path, for example because a hook or plugin gave it to you. The script
+  reads the files the session wrote and the paths its commands named, takes the session's start
+  from it, and keeps what the session published. With it, `--since` is not needed, and `--claim`
+  only for what the history cannot show, such as files a script created on its own.
 - `--since`: when this session started, as an ISO date. If you do not know it, use the creation
   time of the session's own scratch or temporary folder, or the time of the first message of this
   unit of work. What appeared after it is listed as "created while this session ran".
@@ -53,7 +59,7 @@ Every item has an id (`w1`, `b2`, `t1`...) and falls in one of four groups:
 
 | Group | Meaning | Checked by default |
 | --- | --- | --- |
-| Created by this session | claimed with `--claim` | yes |
+| Created by this session | claimed with `--claim`, or found in the session history | yes |
 | Created while this session ran | appeared after `--since`, but another session may own it | no |
 | Older (backlog) | from before this session; listed only with `--audit` | yes in an audit, if nothing argues against it |
 | Kept | has a reason to stay, shown next to it; cannot be removed | never |
@@ -64,6 +70,12 @@ session claimed it). It keeps a claimed path that existed before the session, an
 contains a repository or the current folder. It leaves unchecked anything that holds env files,
 branches with no commits of their own (they may be new work), merged items whose pull requests could
 not be read, and claimed changes to tracked files (restoring them discards the changes).
+
+From the session history, a path counts as the session's only if it still exists and appeared
+after the session started. Inside a repository, only ignored files count, such as a copied `.env`:
+tracked files and new files are the work itself. A folder that commands only named, without the
+session writing into it, is left unchecked, since it may hold more than the session's files. Files
+sent to a tool that publishes pages or documents are kept, and so is the history with its folder.
 
 The script cannot see everything. Add these yourself, from what you did in the session:
 
