@@ -1,0 +1,17 @@
+{
+  "description": "Gives each session the path of its history and the command that lists what it left, and warns when the disk is nearly full. Never blocks, never deletes.",
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node",
+            "args": ["${CLAUDE_PLUGIN_ROOT}/hooks/session-cleanup.mjs"],
+            "timeout": 10
+          }
+        ]
+      }
+    ]
+  }
+}

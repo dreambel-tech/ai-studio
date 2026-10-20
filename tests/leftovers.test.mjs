@@ -428,3 +428,19 @@ test("finds the paths a command names", () => {
   assert.deepEqual(found("curl https://example.com/a/b $HOME/x *.log"), []);
   if (process.platform === "win32") assert.ok(found("rm -rf /c/Users/me/tmp/cdp-1").includes("C:\\Users\\me\\tmp\\cdp-1"));
 });
+
+test("a worktree named in a launch configuration is left unchecked, and missing targets are reported", () => {
+  const { dir, paths, scan } = sharedFixture();
+  const config = join(dir, "launch-project", ".claude", "launch.json");
+  write(config, JSON.stringify({ configurations: [
+    { name: "a", runtimeArgs: ["--prefix", paths.mergedA] },
+    { name: "b", runtimeArgs: ["--prefix", join(paths.repo, "gone-folder")] },
+  ] }));
+  const plan = scan(["--audit", "--active-hours", "0", "--config", config]);
+  const merged = byPath(plan, paths.mergedA);
+  assert.match(merged.choose, /named in .*launch\.json: remove its entries too/);
+  assert.equal(merged.selected, false);
+  const [reference] = byKind(plan, "reference");
+  assert.ok(samePath(reference.target, join(paths.repo, "gone-folder")));
+  assert.equal(reference.action, "report");
+});

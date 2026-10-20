@@ -1,0 +1,13 @@
+{
+  "name": "session-cleanup",
+  "description": "At the start of each session, gives it the path of its history and the command that lists what it left on the computer (worktrees, merged branches, browser profiles, copied env files), with sizes, so it can offer a cleanup at the end of each unit of work. Never blocks, never deletes.",
+  "version": "0.1.0",
+  "author": {
+    "name": "Dreambel Tech",
+    "url": "https://github.com/dreambel-tech"
+  },
+  "homepage": "https://github.com/dreambel-tech/ai-studio/tree/main/claude/plugins/session-cleanup",
+  "repository": "https://github.com/dreambel-tech/ai-studio",
+  "license": "MIT",
+  "keywords": ["cleanup", "worktrees", "branches", "disk", "session", "session-start"]
+}

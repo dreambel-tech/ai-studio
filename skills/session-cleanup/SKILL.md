@@ -46,6 +46,9 @@ node <this skill's folder>/scripts/leftovers.mjs scan --since <session start> --
   session's. Keep a short running list of them while you work.
 - `--repo`: another repository you worked in, besides the working folder. A folder that is not a
   repository but holds several (an umbrella folder) is scanned subfolder by subfolder.
+- `--config`: a configuration file that may point into worktrees, such as a launch configuration
+  for dev servers. A worktree it names is left unchecked, with a note to remove its entries too,
+  and entries that point to folders that are gone are reported.
 - `--audit`: also list older leftovers (the backlog) with their size, plus caches such as npm and
   Docker, which are reported only.
 
@@ -81,14 +84,16 @@ The script cannot see everything. Add these yourself, from what you did in the s
 
 - processes you started that still run: dev servers, watchers, containers;
 - entries you added to config files that also hold other settings, such as a launch configuration:
-  offer to remove only your entries;
+  offer to remove only your entries, and remove them by hand once the user agrees;
+- worktrees that the agent tool manages for its own sessions: if a worktree may belong to another
+  session that is still open, say so and let the user decide;
 - test data you wrote to a local database;
 - anything that a published page, document or shared artifact was built from: keep it, and say so.
 
 ## 4. Offer the cleanup
 
 If nothing was created by or during this session, say nothing about cleanup, unless free space is
-low (under 10% or 20 GB): then add one sentence offering an audit.
+low (under 20 GB): then add one sentence offering an audit.
 
 Otherwise, show a short list in the user's language: one line per item or group, with its size and
 the total, and whether it is checked. Then one line for what is kept, with the reasons in a few

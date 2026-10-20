@@ -1,0 +1,3 @@
+# The plugin manifests of Codex live in .codex-plugin folders; keep them even where a
+# global ignore file excludes .codex-* folders.
+!.codex-plugin/

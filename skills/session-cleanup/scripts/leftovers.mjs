@@ -33,7 +33,7 @@ export const SECRET_FILE = /^\.env(\.(?!(example|sample|template|dist)$)[\w.-]+)
 
 const USAGE = `Usage:
   node leftovers.mjs scan [--history <file>] [--since <time>] [--claim <path>]... [--repo <path>]...
-                          [--audit] [--json] [--active-hours <n>] [--size-seconds <n>]
+                          [--config <file>]... [--audit] [--json] [--active-hours <n>] [--size-seconds <n>]
   node leftovers.mjs remove --plan <file> (<id>... | selected) [--json]
 
 scan lists what was left behind and saves a plan file; it changes nothing.
@@ -44,6 +44,9 @@ scan lists what was left behind and saves a plan file; it changes nothing.
                   is listed as "created while this session ran"
   --claim         a path this session created (repeatable): listed as this session's
   --repo          a repository to scan besides the current folder (repeatable)
+  --config        a configuration file that may point into worktrees, such as a launch
+                  configuration (repeatable): a worktree it names is left unchecked, and
+                  the entries that point to missing folders are reported
   --audit         also list everything older (the backlog), with sizes
   --active-hours  worktrees used more recently than this are kept (default ${DEFAULT_ACTIVE_HOURS})
   --size-seconds  time budget for measuring sizes (default ${DEFAULT_SIZE_SECONDS})
@@ -611,7 +614,7 @@ function claimItems(ctx, repos) {
 function cacheItems(ctx) {
   const items = [];
   const npm = process.env.LEFTOVERS_NPM_CACHE ?? process.env.npm_config_cache ?? (WINDOWS ? join(process.env.LOCALAPPDATA || join(homedir(), "AppData", "Local"), "npm-cache") : join(homedir(), ".npm"));
-  if (npm && existsSync(npm)) items.push({ kind: "cache", path: npm, owner: "backlog", action: "report", label: `npm cache, ${display(npm, ctx)}`, hint: "npm cache clean --force" });
+  if (npm && existsSync(npm)) items.push({ kind: "cache", path: npm, owner: "backlog", action: "report", label: `npm cache, ${display(npm, ctx)}`, hint: "to free it, run npm cache clean --force" });
   if (process.env.LEFTOVERS_DOCKER !== "none") {
     const result = run("docker", ["system", "df", "--format", "{{json .}}"], ctx.cwd, 15_000);
     if (result.ok) {
@@ -624,7 +627,7 @@ function cacheItems(ctx) {
       }).filter(Boolean);
       const bytes = rows.reduce((sum, row) => sum + parseDockerSize(row.Size), 0);
       const detail = rows.map((row) => `${String(row.Type).toLowerCase()} ${row.Size} (reclaimable ${String(row.Reclaimable).split(" ")[0]})`).join(", ");
-      if (rows.length) items.push({ kind: "cache", owner: "backlog", action: "report", bytes, label: `Docker: ${detail}`, hint: "docker system df -v, then docker system prune (add --volumes only if no volume holds data you need)" });
+      if (rows.length) items.push({ kind: "cache", owner: "backlog", action: "report", bytes, label: `Docker: ${detail}`, hint: "to free it, look with docker system df -v, then run docker system prune (with --volumes only if no volume holds data you need)" });
     }
   }
   return items;
@@ -652,11 +655,43 @@ function display(path, ctx) {
 }
 
 const SECTIONS = ["session", "window", "backlog"];
-const PREFIX = { worktree: "w", records: "r", branches: "b", temp: "t", path: "p", change: "c", cache: "x" };
+const PREFIX = { worktree: "w", records: "r", branches: "b", temp: "t", path: "p", change: "c", cache: "x", reference: "e" };
+
+// Relative paths in a file of a dot-folder (.vscode/launch.json) are read from the
+// project folder above it; elsewhere, from the file's own folder.
+function configBase(file) {
+  const dir = dirname(file);
+  return basename(dir).startsWith(".") ? dirname(dir) : dir;
+}
+
+// Worktrees that a configuration file names, and the folders it names that are gone.
+function configItems(items, repos, ctx, configs) {
+  const out = [];
+  for (const file of configs) {
+    let text;
+    try {
+      text = readFileSync(file, "utf8");
+    } catch {
+      ctx.notes.push(`Configuration file not found: ${file}`);
+      continue;
+    }
+    const refs = [...pathsIn(text, configBase(file))];
+    for (const item of items) {
+      if (item.kind !== "worktree" || item.keep || !refs.some((ref) => isInside(ref, item.path))) continue;
+      const reason = `named in ${display(file, ctx)}: remove its entries too`;
+      item.choose = item.choose ? `${item.choose}; ${reason}` : reason;
+    }
+    const missing = refs.filter((ref) => !existsSync(ref) && repos.some((repo) => isInside(ref, repo.main)));
+    for (const ref of missing) {
+      out.push({ kind: "reference", path: file, target: ref, owner: "backlog", action: "report", label: `${display(file, ctx)} points to a missing folder: ${display(ref, ctx)}`, hint: "remove that entry by hand" });
+    }
+  }
+  return out;
+}
 
 function measure(items, deadline) {
   for (const item of items) {
-    if (item.keep || item.bytes != null) continue;
+    if (item.keep || item.bytes != null || item.kind === "reference") continue;
     const targets = item.members ? item.members.map((member) => member.path).filter(Boolean) : item.path ? [item.path] : [];
     if (!targets.length) continue;
     let bytes = 0;
@@ -711,6 +746,7 @@ export function scan(options = {}) {
   let items = [];
   for (const repo of repos) items.push(...worktreeItems(repo, ctx), ...branchItems(repo, ctx));
   items.push(...tempItems(ctx), ...claimItems(ctx, repos));
+  items.push(...configItems(items, repos, ctx, (options.configs || []).map((file) => resolve(ctx.cwd, file))));
   if (ctx.audit) items.push(...cacheItems(ctx));
 
   const order = (item) => (item.keep ? 3 : SECTIONS.indexOf(item.owner));
@@ -923,7 +959,7 @@ function removeOne(item, plan, ctx, repoCache) {
       return restored.ok ? { status: "restored" } : { status: "failed", reason: restored.err.split("\n")[0] };
     }
     default:
-      return { status: "skipped", reason: `report only${item.hint ? `: run ${item.hint} yourself` : ""}` };
+      return { status: "skipped", reason: `report only${item.hint ? `: ${item.hint}` : ""}` };
   }
 }
 
@@ -937,7 +973,7 @@ export function remove(plan, ids) {
   const ctx = freshContext(plan);
   const repoCache = new Map();
   // Files and folders first, worktrees next, branches last: a worktree removal frees its branch.
-  const rank = { change: 0, path: 1, temp: 2, worktree: 3, records: 4, branches: 5, cache: 6 };
+  const rank = { change: 0, path: 1, temp: 2, worktree: 3, records: 4, branches: 5, cache: 6, reference: 7 };
   const chosen = plan.items.filter((item) => wanted.has(item.id)).sort((a, b) => rank[a.kind] - rank[b.kind]);
   const results = chosen.map((item) => {
     let result;
@@ -968,7 +1004,7 @@ export function renderRemoval(outcome) {
 
 export function parseArgs(argv) {
   const [command, ...rest] = argv;
-  const options = { command, claims: [], repos: [], ids: [] };
+  const options = { command, claims: [], repos: [], configs: [], ids: [] };
   for (let i = 0; i < rest.length; i++) {
     const arg = rest[i];
     const value = () => {
@@ -983,6 +1019,7 @@ export function parseArgs(argv) {
     } else if (arg === "--claim") options.claims.push(value());
     else if (arg === "--history") options.history = value();
     else if (arg === "--repo") options.repos.push(value());
+    else if (arg === "--config") options.configs.push(value());
     else if (arg === "--plan") options.plan = value();
     else if (arg === "--active-hours") options.activeHours = Number(value());
     else if (arg === "--size-seconds") options.sizeSeconds = Number(value());
