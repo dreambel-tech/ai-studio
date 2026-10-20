@@ -11,7 +11,7 @@ instructions/       Lines to add to your agent instruction files (AGENTS.md, CLA
 claude/plugins/     Claude Code plugins
 claude/statusline/  Claude Code status line
 codex/              Codex adapters
-tests/              Tests for the scripts shared by several adapters
+tests/              Tests for the scripts in skills/ and in the adapters
 ```
 
 The shared parts, `skills/` and `instructions/`, name no agent tool. Each tool folder only adds
@@ -27,6 +27,7 @@ the shared parts works without the adapters.
 | [dreambel-deliver-with-evidence](skills/dreambel-deliver-with-evidence/) | Evidence-first delivery for complex changes |
 | [meaning-first-design](skills/meaning-first-design/) | Avoid generic AI-looking interfaces by letting the meaning of the project drive every design choice |
 | [react-scss-architecture](skills/react-scss-architecture/) | React architecture with strict TypeScript and global SCSS |
+| [session-cleanup](skills/session-cleanup/) | Clean up after each unit of work: list what the session left, with sizes, remove only what you pick |
 | [session-relay](skills/session-relay/) | Keep long sessions affordable: assess their weight, offer to compact or start fresh, write the relay brief |
 <!-- agents-skills:index:end -->
 
@@ -39,6 +40,7 @@ project, or install them all as a Claude Code plugin (below).
 | File | Purpose |
 | --- | --- |
 | [session-relay.md](instructions/session-relay.md) | Makes every session assess its own weight at natural breaks. |
+| [session-cleanup.md](instructions/session-cleanup.md) | Makes every session clean up what it left behind at the end of each unit of work. |
 
 ## Claude Code
 
@@ -47,6 +49,7 @@ project, or install them all as a Claude Code plugin (below).
 | `studio-skills` | Every skill in `skills/`, as Claude Code skills. |
 | [agent-skills-bridge](claude/plugins/agent-skills-bridge/) | Links a project's `.claude/skills` to its `.agents/skills`, so Claude Code sees the same skills as other agent tools. |
 | [context-gauge](claude/plugins/context-gauge/) | Tells the session once per level when its context grows heavy, so it can offer a fresh session. |
+| [session-cleanup](claude/plugins/session-cleanup/) | Gives each session its history and the command that lists what it left, with sizes, so it can offer a cleanup. |
 
 In the terminal, the [context-line](claude/statusline/) status line also shows the context size in
 the footer, dim while the session is light and coloured once it is heavy. A plugin cannot set a
@@ -57,6 +60,7 @@ Install a plugin in one step (Claude Code 2.1.275 or later):
 ```
 /plugin install studio-skills --marketplace dreambel-tech/ai-studio
 /plugin install context-gauge --marketplace dreambel-tech/ai-studio
+/plugin install session-cleanup --marketplace dreambel-tech/ai-studio
 ```
 
 Or add the marketplace once, then install any plugin from it:
@@ -74,10 +78,12 @@ into `~/.agents/skills/` or a project's `.agents/skills/`.
 | Plugin | What it does |
 | --- | --- |
 | [context-gauge](codex/plugins/context-gauge/) | Tells the session once per level when its context grows heavy, so it can offer a fresh session. |
+| [session-cleanup](codex/plugins/session-cleanup/) | Gives each session its rollout and the command that lists what it left, with sizes, so it can offer a cleanup. |
 
 ```bash
 codex plugin marketplace add dreambel-tech/ai-studio
 codex plugin add context-gauge@ai-studio
+codex plugin add session-cleanup@ai-studio
 ```
 
 Codex reads its own marketplace, [`.agents/plugins/marketplace.json`](.agents/plugins/marketplace.json),

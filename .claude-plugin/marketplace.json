@@ -10,7 +10,7 @@
       "name": "studio-skills",
       "source": "./",
       "strict": false,
-      "description": "Every skill in the ai-studio skills folder, as Claude Code skills: meaning-first design, delivery with evidence, code coherence, React SCSS architecture and session relay."
+      "description": "Every skill in the ai-studio skills folder, as Claude Code skills: meaning-first design, delivery with evidence, code coherence, React SCSS architecture, session relay and session cleanup."
     },
     {
       "name": "agent-skills-bridge",
@@ -21,6 +21,11 @@
       "name": "context-gauge",
       "source": "./claude/plugins/context-gauge",
       "description": "Tells the session once per level when its context grows heavy, so it can offer a fresh session from a relay brief at the next natural break."
+    },
+    {
+      "name": "session-cleanup",
+      "source": "./claude/plugins/session-cleanup",
+      "description": "Gives each session the path of its history and the command that lists what it left (worktrees, merged branches, browser profiles, copied env files), with sizes, so it can offer a cleanup at the end of each unit of work."
     }
   ]
 }
