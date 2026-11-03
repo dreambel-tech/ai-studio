@@ -25,6 +25,7 @@ the shared parts works without the adapters.
 | --- | --- |
 | [code-coherence-guardrails](skills/code-coherence-guardrails/) | Guardrails for coherent code and architecture reviews. |
 | [dreambel-deliver-with-evidence](skills/dreambel-deliver-with-evidence/) | Evidence-first delivery for complex changes |
+| [intent-first-work](skills/intent-first-work/) | Take on any task from its intention and what already exists, and check the result against the intention |
 | [meaning-first-design](skills/meaning-first-design/) | Avoid generic AI-looking interfaces by letting the meaning of the project drive every design choice |
 | [react-scss-architecture](skills/react-scss-architecture/) | React architecture with strict TypeScript and global SCSS |
 | [session-cleanup](skills/session-cleanup/) | Clean up after each unit of work: list what the session left, with sizes, remove only what you pick |
@@ -41,6 +42,7 @@ project, or install them all as a Claude Code plugin (below).
 | --- | --- |
 | [session-relay.md](instructions/session-relay.md) | Makes every session assess its own weight at natural breaks. |
 | [session-cleanup.md](instructions/session-cleanup.md) | Makes every session clean up what it left behind at the end of each unit of work. |
+| [intent-first-work.md](instructions/intent-first-work.md) | Makes every task start from the intention and the existing state, and end with a check against the intention. |
 
 ## Claude Code
 
