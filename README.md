@@ -49,6 +49,7 @@ project, or install them all as a Claude Code plugin (below).
 | Plugin | What it does |
 | --- | --- |
 | `studio-skills` | Every skill in `skills/`, as Claude Code skills. |
+| [intent-first-work](claude/plugins/intent-first-work/) | The `intent-first-work` skill and its instruction lines, given to each session at start, with nothing to copy. |
 | [agent-skills-bridge](claude/plugins/agent-skills-bridge/) | Links a project's `.claude/skills` to its `.agents/skills`, so Claude Code sees the same skills as other agent tools. |
 | [context-gauge](claude/plugins/context-gauge/) | Tells the session once per level when its context grows heavy, so it can offer a fresh session. |
 | [session-cleanup](claude/plugins/session-cleanup/) | Gives each session its history and the command that lists what it left, with sizes, so it can offer a cleanup. |
@@ -61,6 +62,7 @@ Install a plugin in one step (Claude Code 2.1.275 or later):
 
 ```
 /plugin install studio-skills --marketplace dreambel-tech/ai-studio
+/plugin install intent-first-work --marketplace dreambel-tech/ai-studio
 /plugin install context-gauge --marketplace dreambel-tech/ai-studio
 /plugin install session-cleanup --marketplace dreambel-tech/ai-studio
 ```
@@ -80,11 +82,13 @@ into `~/.agents/skills/` or a project's `.agents/skills/`.
 | Plugin | What it does |
 | --- | --- |
 | [context-gauge](codex/plugins/context-gauge/) | Tells the session once per level when its context grows heavy, so it can offer a fresh session. |
+| [intent-first-work](codex/plugins/intent-first-work/) | The `intent-first-work` skill and its instruction lines, given to each session at start, with nothing to copy. |
 | [session-cleanup](codex/plugins/session-cleanup/) | Gives each session its rollout and the command that lists what it left, with sizes, so it can offer a cleanup. |
 
 ```bash
 codex plugin marketplace add dreambel-tech/ai-studio
 codex plugin add context-gauge@ai-studio
+codex plugin add intent-first-work@ai-studio
 codex plugin add session-cleanup@ai-studio
 ```
 
