@@ -12,6 +12,10 @@ Where to put them:
 | Codex | `~/.codex/AGENTS.md` |
 | Other tools | their user-level instruction file, or each project's `AGENTS.md` |
 
+In Claude Code and Codex, the `intent-first-work` plugin gives these lines to each session instead,
+with the skill, and takes them away when it is disabled. With the plugin, do not also copy them into
+an instruction file: the agent would read them twice.
+
 ```markdown
 ## Intent first
 

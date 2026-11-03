@@ -1,0 +1,20 @@
+{
+  "name": "intent-first-work",
+  "version": "0.1.0",
+  "description": "The intent-first-work skill and its instruction lines, given to each session at start, so every task starts from the intention and the existing state and ends with a check against the intention. Nothing is written to your projects or instruction files.",
+  "keywords": ["intent", "instructions", "review", "session", "session-start"],
+  "author": {
+    "name": "Dreambel Tech",
+    "url": "https://github.com/dreambel-tech"
+  },
+  "homepage": "https://github.com/dreambel-tech/ai-studio/tree/main/codex/plugins/intent-first-work",
+  "repository": "https://github.com/dreambel-tech/ai-studio",
+  "license": "MIT",
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "Intent-first Work",
+    "shortDescription": "Starts every task from the intention and the existing state, and checks the result against it",
+    "developerName": "Dreambel Tech",
+    "category": "Developer Tools"
+  }
+}

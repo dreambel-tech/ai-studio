@@ -13,6 +13,27 @@
       "description": "Every skill in the ai-studio skills folder, as Claude Code skills: intent-first work, meaning-first design, delivery with evidence, code coherence, React SCSS architecture, session relay and session cleanup."
     },
     {
+      "name": "intent-first-work",
+      "source": "./",
+      "strict": false,
+      "description": "The intent-first-work skill and its instruction lines, given to each session at start, so every task starts from the intention and the existing state and ends with a check against the intention. Nothing is written to your projects or instruction files.",
+      "skills": ["./skills/intent-first-work"],
+      "hooks": {
+        "SessionStart": [
+          {
+            "hooks": [
+              {
+                "type": "command",
+                "command": "node",
+                "args": ["${CLAUDE_PLUGIN_ROOT}/claude/plugins/intent-first-work/hooks/intent-first-work.mjs", "${CLAUDE_PLUGIN_ROOT}/instructions/intent-first-work.md"],
+                "timeout": 10
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
       "name": "agent-skills-bridge",
       "source": "./claude/plugins/agent-skills-bridge",
       "description": "Makes the skills in a project's .agents/skills folder available in Claude Code by linking .claude/skills to it at session start."
