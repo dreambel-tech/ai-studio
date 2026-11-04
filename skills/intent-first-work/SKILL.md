@@ -57,7 +57,9 @@ A new task has an existing state too: it lands in a product, a direction, neighb
   cancelled, stays visible while pending, keeps data private, works with accessibility settings,
   stays fast. A new condition, exemption or early exit changes every other path through it too:
   list what those paths must keep doing. These promises are rarely written down; read them in the
-  code, the tests, the comments and the history.
+  code, the tests, the comments and the history. The list comes from reading what you change, not
+  from a new investigation: a few lines are enough. A defect found next to the bug is reported, not
+  fixed, unless it is part of what was asked.
 - **Who depends on it.** Before you remove, move or rename anything, find every reader: the callers,
   and also whatever reads a signal, a flag, a side effect, a file or an event it produces.
 - **Who else works here.** People, other agents, other sessions, and shared resources: devices,
@@ -127,8 +129,10 @@ Before you say done:
 
 1. **The intention.** Will the person get what they wanted, not only what they wrote?
 2. **The keep list and the matrix.** Each item still holds, with its proof (a test, a log, a
-   replay, a screenshot), or is listed as dropped, with why. Your report names each item, not only
-   the one that was asked for.
+   replay, a screenshot), or is listed as dropped, with why. When you cannot build or run, reading
+   the changed path is the proof: write "checked by reading, not run" and stop there, rather than
+   working around what blocks the run. Your report names each item, not only the one that was
+   asked for.
 3. **Adversarially.** How does this fail, and for whom? At least: twice in a row, cancelled at the
    wrong moment, interrupted and resumed, empty or missing input, accessibility and reduced-motion
    settings, another user or recipient.

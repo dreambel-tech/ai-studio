@@ -25,8 +25,10 @@ what the current state guarantees, who else depends on it or works there), and t
 verified from what you assume. When you change existing code, even to fix a bug, first write down
 what it does today that must survive: everything the code you replace or wrap shows, says,
 announces, checks or triggers, and what the decision records and docs of that area decide (search
-them for the names you touch). Keep each one, or say plainly which you drop and why, and name each
-in your final message. An edit that only applies what the person spelled out needs none of this.
+them for the names you touch). A few lines, from reading what you change, are enough. Keep each
+one, or say plainly which you drop and why, and name each in your final message; when you cannot
+run the code, say it was checked by reading. An edit that only applies what the person spelled out
+needs none of this.
 When the task is large, inherited, ambiguous, or touches a guarantee or a decision, come back first
 with that sentence, a short matrix of what matters, and only the questions you cannot answer
 yourself, each with your default. Before saying done, check the result against that sentence and
