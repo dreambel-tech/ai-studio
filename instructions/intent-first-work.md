@@ -22,8 +22,15 @@ an instruction file: the agent would read them twice.
 Before any task that is more than a quick, clear edit, load the `intent-first-work` skill if it is
 available and follow it. In any case: state in one sentence what the person wants and why, read what already exists (decisions, how the problem is already handled,
 what the current state guarantees, who else depends on it or works there), and tell what you
-verified from what you assume. When the task is large, inherited, ambiguous, or touches a guarantee
-or a decision, come back first with that sentence, a short matrix of what matters, and only the
-questions you cannot answer yourself, each with your default. Before saying done, check the result
-against that sentence, not only against the written instruction.
+verified from what you assume. When you change existing code, even to fix a bug, first write down
+what it does today that must survive: everything the code you replace or wrap shows, says,
+announces, checks or triggers, and what the decision records and docs of that area decide (search
+them for the names you touch). A few lines, from reading what you change, are enough. Keep each
+one, or say plainly which you drop and why, and name each in your final message; when you cannot
+run the code, say it was checked by reading. An edit that only applies what the person spelled out
+needs none of this.
+When the task is large, inherited, ambiguous, or touches a guarantee or a decision, come back first
+with that sentence, a short matrix of what matters, and only the questions you cannot answer
+yourself, each with your default. Before saying done, check the result against that sentence and
+that list, not only against the written instruction.
 ```

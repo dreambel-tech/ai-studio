@@ -47,10 +47,19 @@ A new task has an existing state too: it lands in a product, a direction, neighb
 - **How it is already done here.** Look for the place's own rules for this kind of work
   (contributing or release guides, review checklists, decision records), and for where the same
   problem is already solved. Follow them, or say why you depart from them.
-- **What it guarantees today.** List what the current state promises and must keep promising: runs
-  once, lasts at least so long, can be cancelled, stays visible while pending, keeps data private,
-  works with accessibility settings, stays fast. These promises are rarely written down; read them
-  in the code, the tests, the comments and the history.
+- **What was decided here.** Search the decision records and docs for the names of the files,
+  components and features you touch, not only for the topic. A decision may already name the
+  behaviour you are about to choose: follow it, or ask before departing from it.
+- **What it guarantees today: the keep list.** When you change existing code, even to fix one bug,
+  write this list before you edit. First, everything the code you replace, wrap or bypass does
+  today, item by item, never "the same behaviour": what it shows, says or announces, checks,
+  stores, triggers. Then the promises around it: runs once, lasts at least so long, can be
+  cancelled, stays visible while pending, keeps data private, works with accessibility settings,
+  stays fast. A new condition, exemption or early exit changes every other path through it too:
+  list what those paths must keep doing. These promises are rarely written down; read them in the
+  code, the tests, the comments and the history. The list comes from reading what you change, not
+  from a new investigation: a few lines are enough. A defect found next to the bug is reported, not
+  fixed, unless it is part of what was asked.
 - **Who depends on it.** Before you remove, move or rename anything, find every reader: the callers,
   and also whatever reads a signal, a flag, a side effect, a file or an event it produces.
 - **Who else works here.** People, other agents, other sessions, and shared resources: devices,
@@ -92,7 +101,9 @@ Keep it light:
 - a question that hides a trade-off or a change outside the task is put as a decision, with its
   consequences.
 
-For a small, clear task, one line of intention is enough: go. When nobody can answer (an unattended
+For a small, clear task, one line of intention is enough: go. A bug fix is not small when the code
+it changes does other things too: write its keep list, even when you do not come back first. An
+edit that only applies what the person spelled out needs none of this. When nobody can answer (an unattended
 run), write the analysis anyway, take the default you named, and say so in the result.
 
 ## 5. Do the work, holding both
@@ -100,7 +111,8 @@ run), write the analysis anyway, take the default you named, and say so in the r
 The traps that turned a misunderstanding into a defect, with real examples, are in
 `references/traps.md`. In short:
 
-- Keep every guarantee from section 2, or name the one you drop and why.
+- Keep every item of the keep list from section 2, or name the one you drop and why. Follow what a
+  decision record decides, or ask before departing from it.
 - State comes from the source that owns it, never from a label, a colour or a layout.
 - Whatever becomes invisible is cancelled or made visible: no hidden pending action.
 - An early exit claims there is nothing left to do. Check the claim where the value is set: can the
@@ -116,8 +128,11 @@ The traps that turned a misunderstanding into a defect, with real examples, are 
 Before you say done:
 
 1. **The intention.** Will the person get what they wanted, not only what they wrote?
-2. **The matrix.** Each guarantee still holds, with its proof (a test, a log, a replay, a
-   screenshot), or is listed as dropped.
+2. **The keep list and the matrix.** Each item still holds, with its proof (a test, a log, a
+   replay, a screenshot), or is listed as dropped, with why. When you cannot build or run, reading
+   the changed path is the proof: write "checked by reading, not run" and stop there, rather than
+   working around what blocks the run. Your report names each item, not only the one that was
+   asked for.
 3. **Adversarially.** How does this fail, and for whom? At least: twice in a row, cancelled at the
    wrong moment, interrupted and resumed, empty or missing input, accessibility and reduced-motion
    settings, another user or recipient.
