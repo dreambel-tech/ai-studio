@@ -31,6 +31,23 @@ announcement and its single execution, and ended up with two owners running at t
 > What did the old version promise, including what it never wrote down? Where is each promise in
 > the new one?
 
+## Fixing what was reported, losing what was next to it
+
+The reported bug gets fixed, and something the code already did is lost on the way, with or
+without the skill loaded. It takes three shapes:
+
+- A function is replaced to fix its result; the old one also wrote an audit entry, and the new one
+  does not.
+- To stop one kind of input from failing a check, the fix exempts it, and the condition it uses
+  exempts the ordinary inputs as well.
+- A fix picks a new behaviour for a screen, while a decision record of that area already names the
+  intended one.
+
+The final report then mentions only the part that was asked for, so nobody sees the loss.
+
+> What did the code I am changing do besides the bug? Where is each of those things after my
+> change, and does my report name them?
+
 ## Removing something shared without finding its readers
 
 Removing a duplicate entrance animation also removed the "card is arriving" signal that another
