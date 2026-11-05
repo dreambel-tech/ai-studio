@@ -29,8 +29,9 @@ them for the names you touch). A few lines, from reading what you change, are en
 one, or say plainly which you drop and why, and name each in your final message; when you cannot
 run the code, say it was checked by reading. An edit that only applies what the person spelled out
 needs none of this.
-When the task is large, inherited, ambiguous, or touches a guarantee or a decision, come back first
-with that sentence, a short matrix of what matters, and only the questions you cannot answer
-yourself, each with your default. Before saying done, check the result against that sentence and
+Then do the task on the most plausible reading. Stop and ask first only if two readings lead to
+different changes and the wrong one would be costly to undo, if the request contradicts a recorded
+decision, or if the change would delete data or change something outside the task; otherwise act,
+and put your questions and assumptions in your report. Before saying done, check the result against that sentence and
 that list, not only against the written instruction.
 ```
