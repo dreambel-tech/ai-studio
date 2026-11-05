@@ -25,7 +25,8 @@ what the current state guarantees, who else depends on it or works there), and t
 verified from what you assume. When you change existing code, even to fix a bug, first write down
 what it does today that must survive: everything the code you replace or wrap shows, says,
 announces, checks or triggers, and what the decision records and docs of that area decide (search
-them for the names you touch). A few lines, from reading what you change, are enough. Keep each
+them for the names you touch), and what the tests that cover it check. A few lines, from reading
+what you change, are enough. A rule you need that is written nowhere is an assumption: name it. Keep each
 one, or say plainly which you drop and why, and name each in your final message; when you cannot
 run the code, say it was checked by reading. An edit that only applies what the person spelled out
 needs none of this.

@@ -30,9 +30,12 @@ enough.
    must survive: what it shows, says, announces, checks, stores, triggers, and the promises around
    it (can be cancelled, stays visible, works with accessibility settings). A few lines, from
    reading the code you touch. Search the docs and decision records for the names you touch, and
-   follow what they decide. Before you remove, move or rename anything, find who reads it: the
-   callers, and whatever reads a flag, an event or a file it produces.
-3. **Assumptions.** What you checked, and what you assume.
+   follow what they decide. Read the tests that cover what you touch: they often say what is wanted,
+   and a rule they check belongs on the list. Before you remove, move or rename anything, find who
+   reads it: the callers, and whatever reads a flag, an event or a file it produces.
+3. **Assumptions.** What you checked, and what you assume. A rule you need that is written nowhere
+   (not in the code, the tests or the docs) is an assumption: name it in your report instead of
+   guessing silently.
 
 ## Then act
 
