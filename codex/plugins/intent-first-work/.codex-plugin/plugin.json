@@ -1,8 +1,8 @@
 {
   "name": "intent-first-work",
-  "version": "0.1.0",
-  "description": "The intent-first-work skill and its instruction lines, given to each session at start, so every task starts from the intention and the existing state and ends with a check against the intention. Nothing is written to your projects or instruction files.",
-  "keywords": ["intent", "instructions", "review", "session", "session-start"],
+  "version": "0.2.0",
+  "description": "Silent-by-default intent and coherence plugin: adapts guidance to model capability and reasoning effort on ambiguous or structural prompts, and pushes unread local decisions and consumers right before edits. Nothing is written to your projects or instruction files.",
+  "keywords": ["intent", "coherence", "hooks", "review", "context"],
   "author": {
     "name": "Dreambel Tech",
     "url": "https://github.com/dreambel-tech"
@@ -13,7 +13,7 @@
   "skills": "./skills/",
   "interface": {
     "displayName": "Intent-first Work",
-    "shortDescription": "Starts every task from the intention and the existing state, and checks the result against it",
+    "shortDescription": "Silent-by-default intent framing and unread local context before edits, calibrated to model capability",
     "developerName": "Dreambel Tech",
     "category": "Developer Tools"
   }
