@@ -25,7 +25,7 @@ the shared parts works without the adapters.
 | --- | --- |
 | [code-coherence-guardrails](skills/code-coherence-guardrails/) | Guardrails for coherent code and architecture reviews. |
 | [dreambel-deliver-with-evidence](skills/dreambel-deliver-with-evidence/) | Evidence-first delivery for complex changes |
-| [intent-first-work](skills/intent-first-work/) | Take on any task from its intention and what already exists, and check the result against the intention |
+| [intent-first-work](skills/intent-first-work/) | Frame complex or ambiguous tasks around real user intent and system coherence |
 | [meaning-first-design](skills/meaning-first-design/) | Avoid generic AI-looking interfaces by letting the meaning of the project drive every design choice |
 | [react-scss-architecture](skills/react-scss-architecture/) | React architecture with strict TypeScript and global SCSS |
 | [session-cleanup](skills/session-cleanup/) | Clean up after each unit of work: list what the session left, with sizes, remove only what you pick |
@@ -33,8 +33,16 @@ the shared parts works without the adapters.
 <!-- agents-skills:index:end -->
 
 Each skill is a folder with a `SKILL.md`, following the [Agent Skills](https://agentskills.io)
-standard. Copy a folder into your agent tool's skills folder, such as `.agents/skills/` in a
-project, or install them all as a Claude Code plugin (below).
+standard. Install one or all skills into any compatible agent tool (Claude Code, Codex, Cursor,
+OpenCode, Antigravity, Windsurf, Cline, etc.) in one command:
+
+```bash
+npx skills add dreambel-tech/ai-studio
+npx skills add dreambel-tech/ai-studio --skill intent-first-work
+```
+
+You can also copy a folder directly into `.agents/skills/`, or install them as a Claude Code or
+Codex plugin below.
 
 ## Instructions
 
@@ -42,14 +50,14 @@ project, or install them all as a Claude Code plugin (below).
 | --- | --- |
 | [session-relay.md](instructions/session-relay.md) | Makes every session assess its own weight at natural breaks. |
 | [session-cleanup.md](instructions/session-cleanup.md) | Makes every session clean up what it left behind at the end of each unit of work. |
-| [intent-first-work.md](instructions/intent-first-work.md) | Makes every task start from the intention and the existing state, and end with a check against the intention. |
+| [intent-first-work.md](instructions/intent-first-work.md) | Keeps tasks anchored in real user intent, system coherence, and goal-based verification without ceremony on clear edits. |
 
 ## Claude Code
 
 | Plugin | What it does |
 | --- | --- |
 | `studio-skills` | Every skill in `skills/`, as Claude Code skills. |
-| [intent-first-work](claude/plugins/intent-first-work/) | The `intent-first-work` skill and its instruction lines, given to each session at start, with nothing to copy. |
+| [intent-first-work](claude/plugins/intent-first-work/) | Silent-by-default intent framing and unread local context before edits, calibrated to model capability and reasoning effort. |
 | [agent-skills-bridge](claude/plugins/agent-skills-bridge/) | Links a project's `.claude/skills` to its `.agents/skills`, so Claude Code sees the same skills as other agent tools. |
 | [context-gauge](claude/plugins/context-gauge/) | Tells the session once per level when its context grows heavy, so it can offer a fresh session. |
 | [session-cleanup](claude/plugins/session-cleanup/) | Gives each session its history and the command that lists what it left, with sizes, so it can offer a cleanup. |
@@ -82,7 +90,7 @@ into `~/.agents/skills/` or a project's `.agents/skills/`.
 | Plugin | What it does |
 | --- | --- |
 | [context-gauge](codex/plugins/context-gauge/) | Tells the session once per level when its context grows heavy, so it can offer a fresh session. |
-| [intent-first-work](codex/plugins/intent-first-work/) | The `intent-first-work` skill and its instruction lines, given to each session at start, with nothing to copy. |
+| [intent-first-work](codex/plugins/intent-first-work/) | Silent-by-default intent framing and unread local context before edits, calibrated to model capability and reasoning effort. |
 | [session-cleanup](codex/plugins/session-cleanup/) | Gives each session its rollout and the command that lists what it left, with sizes, so it can offer a cleanup. |
 
 ```bash
