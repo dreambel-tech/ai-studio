@@ -14,37 +14,8 @@
     },
     {
       "name": "intent-first-work",
-      "source": "./",
-      "strict": false,
-      "description": "Silent-by-default intent and coherence plugin: adapts guidance to model capability and reasoning effort on ambiguous or structural prompts, and pushes unread local decisions and consumers right before edits. Nothing is written to your projects or instruction files.",
-      "skills": ["./skills/intent-first-work"],
-      "hooks": {
-        "UserPromptSubmit": [
-          {
-            "hooks": [
-              {
-                "type": "command",
-                "command": "node",
-                "args": ["${CLAUDE_PLUGIN_ROOT}/claude/plugins/intent-first-work/hooks/intent-first-work.mjs"],
-                "timeout": 10
-              }
-            ]
-          }
-        ],
-        "PreToolUse": [
-          {
-            "matcher": "Edit|Write|MultiEdit",
-            "hooks": [
-              {
-                "type": "command",
-                "command": "node",
-                "args": ["${CLAUDE_PLUGIN_ROOT}/claude/plugins/intent-first-work/hooks/intent-first-work.mjs"],
-                "timeout": 10
-              }
-            ]
-          }
-        ]
-      }
+      "source": "./claude/plugins/intent-first-work",
+      "description": "Silent-by-default intent and coherence plugin: adapts guidance to model capability and reasoning effort on ambiguous or structural prompts, and pushes unread local decisions and consumers right before edits. Nothing is written to your projects or instruction files."
     },
     {
       "name": "agent-skills-bridge",

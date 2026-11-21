@@ -1,0 +1,30 @@
+{
+  "description": "Silent-by-default intent framing on ambiguous or structural prompts, and unread local context before edits, calibrated to model capability and reasoning effort.",
+  "hooks": {
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node",
+            "args": ["${CLAUDE_PLUGIN_ROOT}/hooks/intent-first-work.mjs"],
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "Edit|Write|MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node",
+            "args": ["${CLAUDE_PLUGIN_ROOT}/hooks/intent-first-work.mjs"],
+            "timeout": 10
+          }
+        ]
+      }
+    ]
+  }
+}
