@@ -89,29 +89,39 @@ function codexMeta(model, effort) {
   return JSON.stringify({ type: "turn_context", payload: { model, effort } });
 }
 
-test("the Claude and Codex plugins ship the same hook, and Codex the same skill and instructions", () => {
+test("the Claude and Codex plugins ship the same hook and only the intent-first-work skill", () => {
   assert.equal(readFileSync(HOOKS.claude, "utf8"), readFileSync(HOOKS.codex, "utf8"));
   assert.equal(readFileSync(join(plugin("codex"), "instructions", "intent-first-work.md"), "utf8"), readFileSync(INSTRUCTIONS, "utf8"));
-  const copy = join(plugin("codex"), "skills", "intent-first-work");
-  assert.deepEqual(files(copy), files(SKILL));
-  for (const file of files(SKILL)) {
-    assert.equal(readFileSync(join(copy, file), "utf8"), readFileSync(join(SKILL, file), "utf8"), `Codex copy of ${file}`);
+  for (const tool of ["claude", "codex"]) {
+    const skillsDir = join(plugin(tool), "skills");
+    assert.deepEqual(readdirSync(skillsDir), ["intent-first-work"], `${tool} plugin must ship only intent-first-work`);
+    const copy = join(skillsDir, "intent-first-work");
+    assert.deepEqual(files(copy), files(SKILL));
+    for (const file of files(SKILL)) {
+      assert.equal(readFileSync(join(copy, file), "utf8"), readFileSync(join(SKILL, file), "utf8"), `${tool} copy of ${file}`);
+    }
   }
 });
 
-test("the Claude Code marketplace entry registers silent-by-default UserPromptSubmit and PreToolUse hooks (no SessionStart)", () => {
+test("the Claude Code plugin is self-contained with Dreambel Tech metadata and silent-by-default hooks (no SessionStart)", () => {
   const marketplace = JSON.parse(readFileSync(join(ROOT, ".claude-plugin", "marketplace.json"), "utf8"));
   const entry = marketplace.plugins.find((p) => p.name === "intent-first-work");
-  assert.equal(entry.source, "./");
-  assert.deepEqual(entry.skills, ["./skills/intent-first-work"]);
-  assert.equal(entry.hooks.SessionStart, undefined);
-  assert.equal(entry.hooks.UserPromptSubmit[0].hooks[0].command, "node");
-  assert.deepEqual(entry.hooks.UserPromptSubmit[0].hooks[0].args, [
-    "${CLAUDE_PLUGIN_ROOT}/claude/plugins/intent-first-work/hooks/intent-first-work.mjs",
+  assert.equal(entry.source, "./claude/plugins/intent-first-work");
+
+  const manifest = JSON.parse(readFileSync(join(plugin("claude"), ".claude-plugin", "plugin.json"), "utf8"));
+  assert.equal(manifest.name, "intent-first-work");
+  assert.equal(manifest.author.name, "Dreambel Tech");
+  assert.match(manifest.version, /^\d+\.\d+\.\d+$/);
+
+  const hooks = JSON.parse(readFileSync(join(plugin("claude"), "hooks", "hooks.json"), "utf8"));
+  assert.equal(hooks.hooks.SessionStart, undefined);
+  assert.equal(hooks.hooks.UserPromptSubmit[0].hooks[0].command, "node");
+  assert.deepEqual(hooks.hooks.UserPromptSubmit[0].hooks[0].args, [
+    "${CLAUDE_PLUGIN_ROOT}/hooks/intent-first-work.mjs",
   ]);
-  assert.equal(entry.hooks.PreToolUse[0].matcher, "Edit|Write|MultiEdit");
-  assert.deepEqual(entry.hooks.PreToolUse[0].hooks[0].args, [
-    "${CLAUDE_PLUGIN_ROOT}/claude/plugins/intent-first-work/hooks/intent-first-work.mjs",
+  assert.equal(hooks.hooks.PreToolUse[0].matcher, "Edit|Write|MultiEdit");
+  assert.deepEqual(hooks.hooks.PreToolUse[0].hooks[0].args, [
+    "${CLAUDE_PLUGIN_ROOT}/hooks/intent-first-work.mjs",
   ]);
 });
 
@@ -125,8 +135,8 @@ test("the Codex marketplace and hooks.json register UserPromptSubmit and PreTool
 });
 
 test("standalone instructions stay concise and focused on intent, coherence, and proof", () => {
-  const raw = readFileSync(INSTRUCTIONS, "utf8");
-  const block = /^```markdown\r?\n([\s\S]*?)\r?\n```$/m.exec(raw)[1].trim();
+  const raw = readFileSync(INSTRUCTIONS, "utf8").replace(/\r\n/g, "\n");
+  const block = /^```markdown\n([\s\S]*?)\n```$/m.exec(raw)[1].trim();
   assert.match(block, /^## Intent first\n/);
   assert.match(block, /Intent first/i);
   assert.match(block, /Coherence/i);
