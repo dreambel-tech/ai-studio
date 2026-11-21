@@ -52,6 +52,11 @@ medium · `+1` high / max):
 
 Override at any time with `INTENT_FIRST_PROFILE=guided|standard|minimal|off`.
 
+To measure real-world trigger rate, injected size, and latency locally, set `INTENT_FIRST_LOG=1`:
+it appends one metadata-only JSONL line per hook call to `telemetry.jsonl` inside the plugin's
+data directory (`PLUGIN_DATA`, `CLAUDE_PLUGIN_DATA`, or the OS temp folder) — never prompt text,
+code, or file paths.
+
 ## Human review & retirement discipline
 
 - **Human PR review:** [`reviewer-checklist.md`](../../../skills/intent-first-work/references/reviewer-checklist.md)

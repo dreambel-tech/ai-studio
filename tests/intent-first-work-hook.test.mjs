@@ -27,6 +27,14 @@ function tempDir(prefix) {
   return dir;
 }
 
+function readFileSyncOrNull(path) {
+  try {
+    return readFileSync(path, "utf8");
+  } catch {
+    return null;
+  }
+}
+
 function files(dir) {
   return readdirSync(dir, { recursive: true, withFileTypes: true })
     .filter((entry) => entry.isFile())
@@ -42,6 +50,7 @@ function runHook(hook, payload, env = {}) {
       PLUGIN_DATA: "",
       CLAUDE_PLUGIN_DATA: "",
       INTENT_FIRST_PROFILE: "",
+      INTENT_FIRST_LOG: "",
       INTENT_FIRST_NO_SETTINGS: "1",
       ...env,
     },
@@ -531,5 +540,43 @@ for (const [tool, hook] of Object.entries(HOOKS)) {
     assert.equal(runHook(hook, "not json"), null);
     assert.equal(runHook(hook, { hook_event_name: "SessionStart" }), null);
     assert.equal(runHook(hook, { hook_event_name: "PreToolUse", tool_name: "Edit", cwd: "/no/such/path" }), null);
+  });
+
+  test(`${tool}: INTENT_FIRST_LOG=1 writes metadata-only telemetry (off by default)`, () => {
+    const data = tempDir(`ifw-log-${tool}-`);
+    const logPath = join(data, "telemetry.jsonl");
+
+    // Off by default -> no telemetry file created.
+    runHook(
+      hook,
+      { hook_event_name: "UserPromptSubmit", session_id: "s-nolog", prompt: "improve secret checkout flow", cwd: ROOT },
+      { PLUGIN_DATA: data },
+    );
+    assert.equal(readFileSyncOrNull(logPath), null);
+
+    // Enabled -> appends metadata only, never prompt text or paths.
+    runHook(
+      hook,
+      { hook_event_name: "UserPromptSubmit", session_id: "s-log", prompt: "improve super_secret_prompt_123", cwd: ROOT },
+      { PLUGIN_DATA: data, INTENT_FIRST_LOG: "1" },
+    );
+    runHook(
+      hook,
+      { hook_event_name: "UserPromptSubmit", session_id: "s-log-2", prompt: "run tests", cwd: ROOT },
+      { PLUGIN_DATA: data, INTENT_FIRST_LOG: "1" },
+    );
+
+    const raw = readFileSync(logPath, "utf8");
+    assert.doesNotMatch(raw, /super_secret_prompt_123/);
+    const rows = raw.trim().split("\n").map((l) => JSON.parse(l));
+    assert.equal(rows.length, 2);
+    assert.equal(rows[0].event, "UserPromptSubmit");
+    assert.equal(rows[0].triggered, true);
+    assert.equal(rows[0].reason, "ambiguous_goal");
+    assert.ok(rows[0].chars > 0);
+    assert.equal(typeof rows[0].latencyMs, "number");
+    assert.equal(rows[1].triggered, false);
+    assert.equal(rows[1].reason, "clear_prompt");
+    assert.equal(rows[1].chars, 0);
   });
 }

@@ -7,7 +7,7 @@
 // codex/plugins/intent-first-work; keep both copies identical (the tests check it).
 
 import { spawnSync } from "node:child_process";
-import { closeSync, existsSync, fstatSync, mkdirSync, openSync, readFileSync, readSync, writeFileSync } from "node:fs";
+import { appendFileSync, closeSync, existsSync, fstatSync, mkdirSync, openSync, readFileSync, readSync, writeFileSync } from "node:fs";
 import { homedir, tmpdir } from "node:os";
 import { dirname, isAbsolute, join, relative, resolve } from "node:path";
 import { pathToFileURL } from "node:url";
@@ -749,10 +749,25 @@ export function formatPreToolContext(targetPath, facts, profile) {
   return text.length > HARD_CAP ? text.slice(0, HARD_CAP - 1) + "…" : text;
 }
 
-function stateFile(sessionId, dataDir) {
-  const dir = dataDir || process.env.PLUGIN_DATA || process.env.CLAUDE_PLUGIN_DATA || join(tmpdir(), "intent-first-work");
+function dataDirectory(dataDir, env = process.env) {
+  const dir = dataDir || env.PLUGIN_DATA || env.CLAUDE_PLUGIN_DATA || join(tmpdir(), "intent-first-work");
   mkdirSync(dir, { recursive: true });
+  return dir;
+}
+
+function stateFile(sessionId, dataDir, env = process.env) {
+  const dir = dataDirectory(dataDir, env);
   return join(dir, `${String(sessionId).replace(/[^\w.-]/g, "_")}.json`);
+}
+
+// Optional privacy-safe local telemetry (INTENT_FIRST_LOG=1): metadata only, never prompts or file paths.
+function logTelemetry(entry, options = {}) {
+  const env = options.env || process.env;
+  if (env.INTENT_FIRST_LOG !== "1") return;
+  try {
+    const dir = dataDirectory(options.dataDir, env);
+    appendFileSync(join(dir, "telemetry.jsonl"), JSON.stringify({ ts: new Date().toISOString(), ...entry }) + "\n");
+  } catch {}
 }
 
 function loadState(file) {
@@ -782,13 +797,31 @@ export function handleHook(input, options = {}) {
   const event = input.hook_event_name;
   if (event !== "UserPromptSubmit" && event !== "PreToolUse") return null;
 
+  const t0 = performance.now();
+  const finish = (output, profile, reason) => {
+    const chars = output ? output.hookSpecificOutput.additionalContext.length : 0;
+    logTelemetry(
+      {
+        event,
+        profile,
+        triggered: Boolean(output),
+        reason,
+        chars,
+        latencyMs: Math.round((performance.now() - t0) * 10) / 10,
+      },
+      options,
+    );
+    return output;
+  };
+
   const cwd = typeof input.cwd === "string" && input.cwd ? input.cwd : options.cwd || process.cwd();
   const repo = repoRoot(cwd);
   const transcript = readTranscriptInfo(input.transcript_path, repo);
   const profile = detectProfile(input, transcript, options);
-  if (profile === "off") return null;
+  if (profile === "off") return finish(null, profile, "profile_off");
 
-  const file = input.session_id ? stateFile(input.session_id, options.dataDir) : null;
+  const env = options.env || process.env;
+  const file = input.session_id ? stateFile(input.session_id, options.dataDir, env) : null;
   const state = file ? loadState(file) : { promptTurn: 0, lastPromptNudgeTurn: 0, nudgedFiles: [], shownDecisions: [] };
 
   if (event === "UserPromptSubmit") {
@@ -796,7 +829,7 @@ export function handleHook(input, options = {}) {
     const cooledDown = state.lastPromptNudgeTurn > 0 && state.promptTurn - state.lastPromptNudgeTurn <= 1;
     if (cooledDown) {
       if (file) saveState(file, state);
-      return null;
+      return finish(null, profile, "cooldown");
     }
 
     const prompt = typeof input.prompt === "string" ? input.prompt : typeof input.user_prompt === "string" ? input.user_prompt : "";
@@ -804,18 +837,23 @@ export function handleHook(input, options = {}) {
     const text = signal ? promptNudge(signal.reason, profile) : null;
     if (!text) {
       if (file) saveState(file, state);
-      return null;
+      const silentReason = transcript.lastAssistantAskedQuestion
+        ? "answered_question"
+        : signal
+          ? "profile_silent"
+          : "clear_prompt";
+      return finish(null, profile, silentReason);
     }
 
     state.lastPromptNudgeTurn = state.promptTurn;
     if (file) saveState(file, state);
-    return { hookSpecificOutput: { hookEventName: "UserPromptSubmit", additionalContext: text } };
+    return finish({ hookSpecificOutput: { hookEventName: "UserPromptSubmit", additionalContext: text } }, profile, signal.reason);
   }
 
   // PreToolUse
-  if (!repo) return null;
+  if (!repo) return finish(null, profile, "no_repo");
   const targets = extractEditTargets(input.tool_name, input.tool_input, repo);
-  if (!targets.length) return null;
+  if (!targets.length) return finish(null, profile, "no_targets");
 
   const alreadyNudged = new Set(state.nudgedFiles);
   const shownDecisions = new Set(state.shownDecisions);
@@ -834,12 +872,12 @@ export function handleHook(input, options = {}) {
     blocks.push(formatted);
   }
 
-  if (!blocks.length) return null;
+  if (!blocks.length) return finish(null, profile, "deduped_or_silent");
 
   state.nudgedFiles = [...alreadyNudged];
   state.shownDecisions = [...shownDecisions];
   if (file) saveState(file, state);
-  return { hookSpecificOutput: { hookEventName: "PreToolUse", additionalContext: blocks.join("\n\n") } };
+  return finish({ hookSpecificOutput: { hookEventName: "PreToolUse", additionalContext: blocks.join("\n\n") } }, profile, "unread_context");
 }
 
 function main() {

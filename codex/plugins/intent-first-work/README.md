@@ -11,7 +11,9 @@ script, skill, and standalone instructions.
 - **`UserPromptSubmit`:** stays silent on clear follow-ups, routine commands, pure questions,
   detailed specs, and replies to an agent's question. On ambiguous, structural, or handed-over
   prompts, injects a concise, model-calibrated nudge (detected from the Codex rollout's model and
-  reasoning effort, or overridden via `INTENT_FIRST_PROFILE=guided|standard|minimal|off`).
+  reasoning effort, or overridden via `INTENT_FIRST_PROFILE=guided|standard|minimal|off`). Set
+  `INTENT_FIRST_LOG=1` to record optional metadata-only JSONL telemetry (`telemetry.jsonl`) in the
+  plugin's data directory.
 - **`PreToolUse` (`apply_patch`, `Edit`, `Write`):** checks local decisions, scoped `AGENTS.md`,
   external consumers, tests, and recent git history for the touched file. Filters out files already
   read in the session and deduplicates once per file per session. Stays completely silent when
