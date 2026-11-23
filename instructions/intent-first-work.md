@@ -6,16 +6,18 @@ and honest verification — without adding ceremony to clear, local edits.
 
 Where to put them:
 
-| Agent tool | Global instruction file |
+| Agent tool | Instruction file |
 | --- | --- |
 | Claude Code | `~/.claude/CLAUDE.md` |
 | Codex | `~/.codex/AGENTS.md` |
-| Other tools | their user-level instruction file, or each project's `AGENTS.md` |
+| GitHub Copilot (VS Code, JetBrains, Visual Studio, GitHub.com) | Project `AGENTS.md` (read natively — no need to duplicate in `.github/copilot-instructions.md`), or path-scoped `.github/instructions/*.instructions.md` |
+| Other tools | Their user-level instruction file, or each project's `AGENTS.md` |
 
-In Claude Code and Codex, prefer the `intent-first-work` plugin instead: it stays silent on clear
-tasks (0 token overhead), injects model-calibrated guidance only on ambiguous or structural
-prompts, and pushes unread local decisions and consumers right before edits. With the plugin
-installed, do not also copy these lines into an instruction file.
+In Claude Code, Codex, and GitHub Copilot (VS Code / CLI), prefer the `intent-first-work` plugin
+instead: it stays silent on clear tasks (0 token overhead), injects model-calibrated guidance only
+on ambiguous or structural prompts, and pushes unread local decisions, blast-radius warnings, and
+consumers right before edits. With the plugin installed, do not also copy these lines into an
+instruction file.
 
 ```markdown
 ## Intent first
@@ -23,9 +25,9 @@ installed, do not also copy these lines into an instruction file.
 Match effort to the task: a clear, local edit needs no ceremony.
 
 For anything ambiguous, structural, inherited, or touching shared behaviour:
-- **Intent first.** Separate the real goal from the proposed means. If the means works against the goal, or two directions carry a real trade-off, pause before coding with the goal in one line and at most two decisive questions (each with a default); otherwise act and state your assumption briefly.
-- **Coherence over quick patches.** Read how the area already works — decisions, patterns, callers, root cause — before changing it. Fit into the system instead of throwing code at a symptom. Keep existing behaviour that has a reason to exist, or name plainly what you drop or put at risk (say nothing about what stays unchanged).
-- **Verified against the goal.** Check that the user actually gets what they wanted, not only that a narrow check passes, and distinguish verified facts from assumptions.
+- **Intent first.** Separate the real goal from the proposed means (do not take vague or reworded tickets literally). If the means works against the goal, or two directions carry a real trade-off, pause with the goal in one line and at most two questions (each with a default); otherwise act and state your assumption briefly.
+- **Root cause & coherence.** Read local decisions, patterns, callers, and root cause before editing. Fix the cause instead of patching symptoms, fabricating data, or widening shared types, components, or global styles without checking semantics and blast radius. Keep intentional behaviour, or name plainly what you drop or risk (say nothing about what stays unchanged).
+- **Verified against the goal.** Check the user gets what they wanted, not only a narrow check, and separate verified facts from assumptions.
 
-Load the `intent-first-work` skill only when a task needs upfront framing (large, ambiguous, inherited, or cross-cutting).
+Load the `intent-first-work` skill only when a task needs upfront framing.
 ```

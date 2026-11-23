@@ -1,7 +1,7 @@
 {
   "name": "intent-first-work",
-  "version": "0.2.0",
-  "description": "Silent-by-default intent and coherence plugin: adapts guidance to model capability and reasoning effort on ambiguous or structural prompts, and pushes unread local decisions and consumers right before edits. Nothing is written to your projects or instruction files.",
+  "version": "0.3.0",
+  "description": "Silent-by-default intent and coherence plugin: adapts guidance to model capability and reasoning effort on ambiguous or structural prompts, and pushes unread local decisions, shared blast-radius warnings, and consumers right before edits. Nothing is written to your projects or instruction files.",
   "keywords": ["intent", "coherence", "hooks", "review", "context"],
   "author": {
     "name": "Dreambel Tech",

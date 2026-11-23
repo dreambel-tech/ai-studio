@@ -11,6 +11,7 @@ instructions/       Lines to add to your agent instruction files (AGENTS.md, CLA
 claude/plugins/     Claude Code plugins
 claude/statusline/  Claude Code status line
 codex/              Codex adapters
+copilot/            GitHub Copilot adapters (Agent Plugins 1.0)
 tests/              Tests for the scripts in skills/ and in the adapters
 ```
 
@@ -102,6 +103,29 @@ codex plugin add session-cleanup@ai-studio
 
 Codex reads its own marketplace, [`.agents/plugins/marketplace.json`](.agents/plugins/marketplace.json),
 before the Claude Code one, so each tool only sees the plugins written for it.
+
+## GitHub Copilot
+
+GitHub Copilot supports [Agent Skills](https://agentskills.io) natively (`.github/skills/`,
+`.agents/skills/`, `~/.copilot/skills/`) and reads `AGENTS.md` (root and nested folders) across VS
+Code, JetBrains, Visual Studio, and GitHub.com — so you do not need to duplicate instructions into
+`.github/copilot-instructions.md`.
+
+For **VS Code** and **GitHub Copilot CLI**, install the Agent Plugin 1.0 package with hooks from
+[`.github/plugin/marketplace.json`](.github/plugin/marketplace.json):
+
+| Plugin | What it does |
+| --- | --- |
+| [intent-first-work](copilot/plugins/intent-first-work/) | Silent-by-default intent framing, shared blast-radius warnings, and unread local context before edits (`userPromptSubmitted` + `preToolUse`). |
+
+```bash
+copilot plugin marketplace add dreambel-tech/ai-studio
+copilot plugin install intent-first-work@ai-studio
+```
+
+VS Code automatically discovers plugins installed via the Copilot CLI. In JetBrains or Visual
+Studio (where plugin hooks are not yet executed natively), use
+[`instructions/intent-first-work.md`](instructions/intent-first-work.md) in `AGENTS.md`.
 
 ## Tests
 

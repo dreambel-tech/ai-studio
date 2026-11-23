@@ -125,6 +125,50 @@ being pushed.
 
 > Did I read what my command printed? Is this device, daemon or log mine alone?
 
+## Patching the symptom or inventing data
+
+- A UI failed to refresh across in-page tabs because an object was mutated in place instead of
+  receiving a new reference. A fix added a 2-second polling loop with synchronisation signatures
+  and introduced race conditions — while the real fix was one line.
+- An absurd numeric input overflowed a database column. The fix widened 18 columns across two
+  modules instead of distinguishing an invalid input from an out-of-range measurement.
+- A chart tab stayed hidden when a device had no history yet. The fix copied the current reading
+  into the history array, fabricating a zero standard deviation and plotting the same point twice,
+  while hiding a deeper query filter bug.
+
+> What is the actual root cause in the existing code? Am I fixing the cause, or making the symptom
+> disappear by inventing data or looping around it?
+
+## Generic changes without field semantics
+
+- A single shared database domain was applied to 18 fields, turning integer measurements into
+  decimals and reverting an earlier precision decision.
+- A shared display helper rounded every number to two decimal places, formatting card IDs with
+  trailing decimals because their legacy column type was a decimal amount.
+- A layout fix targeted a shared tab container selector, changing the layout of every tab in the
+  screen without visual verification.
+
+> Does this shared type, helper, component, or selector carry different meanings across its
+> callers? Confirm scope before changing a shared surface.
+
+## Taking an ambiguous or AI-reworded ticket literally
+
+"Real-time updates across tabs" (reworded by an assistant) referred to in-page workflow tabs, not
+browser tabs — and turned into server polling. "Fix it on all fields" turned into a single generic
+type for unrelated quantities.
+
+> Does the literal wording match how the system actually works, or is it a shorthand for a simpler
+> goal?
+
+## Accepting a broken data model silently
+
+A fix worked around an identifier stored as a decimal amount, or omitted a status tag missing from
+the data model, without mentioning the underlying defect. The workaround shipped and locked in the
+confusion.
+
+> Did I spot a model mismatch or missing concept while implementing? Fix it if in scope, or flag
+> it explicitly in the report instead of hiding it.
+
 ## The same traps outside code
 
 - **Document**: a status page listing as done what was only planned; a summary that drops the

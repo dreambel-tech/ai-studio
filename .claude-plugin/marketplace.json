@@ -15,7 +15,7 @@
     {
       "name": "intent-first-work",
       "source": "./claude/plugins/intent-first-work",
-      "description": "Silent-by-default intent and coherence plugin: adapts guidance to model capability and reasoning effort on ambiguous or structural prompts, and pushes unread local decisions and consumers right before edits. Nothing is written to your projects or instruction files."
+      "description": "Silent-by-default intent and coherence plugin: adapts guidance to model capability and reasoning effort on ambiguous or structural prompts, and pushes unread local decisions, shared blast-radius warnings, and consumers right before edits. Nothing is written to your projects or instruction files."
     },
     {
       "name": "agent-skills-bridge",

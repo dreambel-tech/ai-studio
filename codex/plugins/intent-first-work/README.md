@@ -14,7 +14,8 @@ script, skill, and standalone instructions.
   reasoning effort, or overridden via `INTENT_FIRST_PROFILE=guided|standard|minimal|off`). Set
   `INTENT_FIRST_LOG=1` to record optional metadata-only JSONL telemetry (`telemetry.jsonl`) in the
   plugin's data directory.
-- **`PreToolUse` (`apply_patch`, `Edit`, `Write`):** checks local decisions, scoped `AGENTS.md`,
+- **`PreToolUse` (`apply_patch`, `Edit`, `Write`):** checks local decisions, spec deviations,
+  scoped `AGENTS.md`, shared blast radius (highly referenced files/symbols or global CSS selectors),
   external consumers, tests, and recent git history for the touched file. Filters out files already
   read in the session and deduplicates once per file per session. Stays completely silent when
   nothing relevant is unread.

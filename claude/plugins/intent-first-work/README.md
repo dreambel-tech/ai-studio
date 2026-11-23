@@ -18,12 +18,13 @@ finds a concrete signal:
 
 1. **On `UserPromptSubmit` (intent intelligence):**
    - **Silent (0 tokens)** on clear follow-ups, slash commands, routine commands (`run tests`,
-     `commit`), pure questions, detailed multi-point specs, anchored file:line/stacktrace prompts,
+     `commit`), pure questions, clean multi-point specs, anchored file:line/stacktrace prompts,
      and whenever the assistant's previous message ended with a question.
-   - **Model-calibrated micro-nudge** on open-ended, ambiguous, structural, or handed-over prompts:
-     encourages separating the real goal from the proposed means, pausing with at most 2 questions
-     (each with a default) when a choice carries a real trade-off, and fitting into the system
-     instead of patching symptoms.
+   - **Model-calibrated micro-nudge** on open-ended, ambiguous, structural, sweeping ("all fields",
+     "real-time"), symptom-only, or handed-over prompts: encourages separating the real goal from
+     the proposed means, pausing with at most 2 questions (each with a default) when a choice
+     carries a real trade-off, and fixing the root cause instead of patching symptoms or altering
+     shared types/styles without checking semantics.
    - Enforces a 1-turn cooldown so it never nags on consecutive turns.
 
 2. **On `PreToolUse` for `Edit`, `Write`, and `MultiEdit` (system coherence):**
@@ -31,18 +32,22 @@ finds a concrete signal:
      no dependencies, no extra LLM turn).
    - **Transcript-aware filter:** ignores any decision record, consumer, or test file the agent has
      already read in the current session.
+   - **Blast-radius detection:** when a touched file, symbol, or global CSS selector (`::ng-deep`,
+     `mat-*`, `body`, `*`) affects many files across multiple areas, surfaces a 1-line `shared`
+     warning instead of silently dropping high-fan-out matches.
    - **Silent (0 tokens)** when nothing relevant is unread or when the file was already enriched
      earlier in the session.
-   - Otherwise pushes a compact factual brief (unread decisions/scoped `AGENTS.md`, external
-     readers, tests, and recent commit subjects) right before the edit lands.
+   - Otherwise pushes a compact factual brief (shared blast radius, unread decisions/spec
+     deviations/scoped `AGENTS.md`, external readers, tests, and recent commit subjects) right
+     before the edit lands.
 
 ## Model & reasoning profiles
 
 The hook automatically detects the active model and reasoning effort from the session transcript
 (with a turn-1 fallback to host settings) and combines **size tier** (`0` small: Haiku, Luna,
-Hydrogen · `1` medium/default: Sonnet, Terra, Neon, Argon, or any unknown model · `2` large: Opus,
-Fable, Mythos, Sol, Astra, Carbon) with **reasoning effort** (`-1` low / no thinking · `0`
-medium · `+1` high / max):
+Hydrogen, Mini, Nano, Flash, Lite, Small, Raptor · `1` medium/default: Sonnet, Terra, Neon, Argon,
+or any unknown model · `2` large: Opus, Fable, Mythos, Sol, Astra, Carbon) with **reasoning effort**
+(`-1` low / no thinking · `0` medium · `+1` high / max):
 
 | Score (`size + effort`) | Profile | Typical combinations | Prompt nudge | Pre-edit brief |
 | --- | --- | --- | --- | --- |

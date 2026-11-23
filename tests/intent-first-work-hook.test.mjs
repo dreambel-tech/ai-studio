@@ -12,6 +12,7 @@ const plugin = (tool) => join(ROOT, tool, "plugins", "intent-first-work");
 const HOOKS = {
   claude: join(plugin("claude"), "hooks", "intent-first-work.mjs"),
   codex: join(plugin("codex"), "hooks", "intent-first-work.mjs"),
+  copilot: join(plugin("copilot"), "com.github.copilot", "hooks", "intent-first-work.mjs"),
 };
 const INSTRUCTIONS = join(ROOT, "instructions", "intent-first-work.md");
 const SKILL = join(ROOT, "skills", "intent-first-work");
@@ -89,10 +90,11 @@ function codexMeta(model, effort) {
   return JSON.stringify({ type: "turn_context", payload: { model, effort } });
 }
 
-test("the Claude and Codex plugins ship the same hook and only the intent-first-work skill", () => {
+test("the Claude, Codex, and Copilot plugins ship the same hook and only the intent-first-work skill", () => {
   assert.equal(readFileSync(HOOKS.claude, "utf8"), readFileSync(HOOKS.codex, "utf8"));
+  assert.equal(readFileSync(HOOKS.claude, "utf8"), readFileSync(HOOKS.copilot, "utf8"));
   assert.equal(readFileSync(join(plugin("codex"), "instructions", "intent-first-work.md"), "utf8"), readFileSync(INSTRUCTIONS, "utf8"));
-  for (const tool of ["claude", "codex"]) {
+  for (const tool of ["claude", "codex", "copilot"]) {
     const skillsDir = join(plugin(tool), "skills");
     assert.deepEqual(readdirSync(skillsDir), ["intent-first-work"], `${tool} plugin must ship only intent-first-work`);
     const copy = join(skillsDir, "intent-first-work");
@@ -101,6 +103,32 @@ test("the Claude and Codex plugins ship the same hook and only the intent-first-
       assert.equal(readFileSync(join(copy, file), "utf8"), readFileSync(join(SKILL, file), "utf8"), `${tool} copy of ${file}`);
     }
   }
+});
+
+test("the GitHub Copilot marketplace, Agent Plugins 1.0 manifest, and hooks.json are valid", () => {
+  const marketplace = JSON.parse(readFileSync(join(ROOT, ".github", "plugin", "marketplace.json"), "utf8"));
+  const entry = marketplace.plugins.find((p) => p.name === "intent-first-work");
+  assert.equal(entry.source, "./copilot/plugins/intent-first-work");
+
+  const manifest = JSON.parse(readFileSync(join(plugin("copilot"), "plugin.json"), "utf8"));
+  assert.equal(manifest.$schema, "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json");
+  assert.equal(manifest.name, "intent-first-work");
+  assert.equal(manifest.author.name, "Dreambel Tech");
+  assert.match(manifest.version, /^\d+\.\d+\.\d+$/);
+  const allowedTopLevel = new Set([
+    "$schema", "name", "version", "description", "author", "homepage", "repository", "license", "keywords", "extensions",
+  ]);
+  for (const key of Object.keys(manifest)) {
+    assert.ok(allowedTopLevel.has(key), `unexpected Agent Plugins 1.0 property: ${key}`);
+  }
+
+  const hooks = JSON.parse(readFileSync(join(plugin("copilot"), "com.github.copilot", "hooks", "hooks.json"), "utf8"));
+  assert.equal(hooks.version, 1);
+  assert.equal(hooks.hooks.sessionStart, undefined);
+  assert.ok(hooks.hooks.userPromptSubmitted[0].bash.includes("intent-first-work.mjs"));
+  assert.ok(hooks.hooks.userPromptSubmitted[0].powershell.includes("intent-first-work.mjs"));
+  assert.ok(hooks.hooks.preToolUse[0].bash.includes("intent-first-work.mjs"));
+  assert.ok(hooks.hooks.preToolUse[0].powershell.includes("intent-first-work.mjs"));
 });
 
 test("the Claude Code plugin is self-contained with Dreambel Tech metadata and silent-by-default hooks (no SessionStart)", () => {
@@ -150,6 +178,11 @@ test("classifyModel & detectProfile combine model size tier (0/1/2) and reasonin
   assert.equal(mod.modelSizeTier("claude-haiku-5-5"), 0);
   assert.equal(mod.modelSizeTier("gpt-6-luna"), 0);
   assert.equal(mod.modelSizeTier("gemini-4-hydrogen"), 0);
+  assert.equal(mod.modelSizeTier("gpt-5-mini"), 0);
+  assert.equal(mod.modelSizeTier("gpt-5-nano"), 0);
+  assert.equal(mod.modelSizeTier("gemini-2.5-flash"), 0);
+  assert.equal(mod.modelSizeTier("gemini-3-flash-lite"), 0);
+  assert.equal(mod.modelSizeTier("raptor-mini"), 0);
   assert.equal(mod.modelSizeTier("claude-sonnet-5-5"), 1);
   assert.equal(mod.modelSizeTier("gpt-6-terra"), 1);
   assert.equal(mod.modelSizeTier("gemini-4-neon"), 1);
@@ -234,6 +267,20 @@ test("analyzePrompt triggers on ambiguous goals, structural changes, and vague b
   assert.equal(mod.analyzePrompt("the login screen is broken")?.reason, "inherited_or_review");
   assert.equal(mod.analyzePrompt("reprends le travail de l'autre agent sur cette branche")?.reason, "inherited_or_review");
   assert.equal(mod.analyzePrompt("explain how auth works and then refactor it")?.reason, "structural_change");
+
+  // AI-reworded multi-bullet tickets with sweeping or symptom traps must NOT be silenced by bullet count alone.
+  assert.equal(
+    mod.analyzePrompt("Contexte:\n- Plantage sur valeur 5235235098\n- Régler le problème sur tous les champs du processus\n- Tester en recette")?.reason,
+    "structural_change",
+  );
+  assert.equal(
+    mod.analyzePrompt("Ticket:\n- Mise à jour en temps réel dans les onglets\n- Après appel maintenance\n- Vérifier le statut")?.reason,
+    "structural_change",
+  );
+  assert.equal(
+    mod.analyzePrompt("Bug:\n- Le lecteur 3 est absent des graphiques\n- Aucun historique disponible\n- Doit afficher l'onglet")?.reason,
+    "inherited_or_review",
+  );
 });
 
 for (const [tool, hook] of Object.entries(HOOKS)) {
@@ -590,3 +637,183 @@ for (const [tool, hook] of Object.entries(HOOKS)) {
     assert.equal(rows[1].chars, 0);
   });
 }
+
+test("PreToolUse flags shared blast radius (shared component, domain symbol, global CSS) and recognizes spec deviation docs", () => {
+  const files = {
+    ".github/copilot-instructions.md": "# Auto-loaded\nMentions AppInputComponent everywhere.\n",
+    ".github/instructions/ui.instructions.md": "# Auto-loaded\nMentions DO_VALEUR_RELEVE.\n",
+    "lot-project/ECARTS-SFD-0.5.0.md": "# Spec deviations\nKeep 6 decimals on DO_VALEUR_RELEVE.\n",
+    "src/shared/app-input.component.ts": "export class AppInputComponent {}\n",
+    "src/model/domains.sql": "CREATE DOMAIN DO_VALEUR_RELEVE NUMERIC(12,6);\n",
+    "src/tabs/detail.component.scss": ".box { padding: 4px; }\n",
+  };
+  // Create 8 consumers across 4 distinct areas so both app-input.component and DO_VALEUR_RELEVE exceed the frequency cap.
+  for (const area of ["modA", "modB", "modC", "modD"]) {
+    files[`src/${area}/screen1.ts`] = "import { AppInputComponent } from '../shared/app-input.component';\nexport const field1 = 'DO_VALEUR_RELEVE';\n";
+    files[`src/${area}/screen2.ts`] = "import { AppInputComponent } from '../shared/app-input.component';\nexport const field2 = 'DO_VALEUR_RELEVE';\n";
+  }
+  const repo = makeRepo(files, "setup shared surfaces");
+  const data = tempDir("ifw-blast-radius-");
+
+  // 1. Editing highly referenced shared component -> surfaces shared blast-radius warning instead of dropping silently.
+  const sharedComp = runHook(
+    HOOKS.claude,
+    {
+      hook_event_name: "PreToolUse",
+      session_id: "s-blast-1",
+      cwd: repo,
+      tool_name: "Edit",
+      tool_input: {
+        file_path: join(repo, "src/shared/app-input.component.ts"),
+        old_string: "export class AppInputComponent {}",
+        new_string: "export class AppInputComponent { maxLen = 30; }",
+      },
+    },
+    { PLUGIN_DATA: data, INTENT_FIRST_PROFILE: "guided" },
+  );
+  assert.ok(sharedComp, "expected shared blast-radius warning for app-input.component.ts");
+  assert.match(sharedComp.hookSpecificOutput.additionalContext, /shared.*used in 8 files across|used in 8 files \(4 areas/);
+  assert.doesNotMatch(sharedComp.hookSpecificOutput.additionalContext, /copilot-instructions\.md/);
+
+  // 2. Editing shared SQL domain -> surfaces both shared blast radius AND ECARTS-SFD decision doc, skipping auto-loaded .github/instructions.
+  const sharedDomain = runHook(
+    HOOKS.claude,
+    {
+      hook_event_name: "PreToolUse",
+      session_id: "s-blast-2",
+      cwd: repo,
+      tool_name: "Edit",
+      tool_input: {
+        file_path: join(repo, "src/model/domains.sql"),
+        old_string: "CREATE DOMAIN DO_VALEUR_RELEVE NUMERIC(12,6);",
+        new_string: "CREATE DOMAIN DO_VALEUR_RELEVE NUMERIC(30,10);",
+      },
+    },
+    { PLUGIN_DATA: data, INTENT_FIRST_PROFILE: "guided" },
+  );
+  assert.ok(sharedDomain, "expected warning for DO_VALEUR_RELEVE");
+  assert.match(sharedDomain.hookSpecificOutput.additionalContext, /shared.*DO_VALEUR_RELEVE.*8 files/);
+  assert.match(sharedDomain.hookSpecificOutput.additionalContext, /decision.*ECARTS-SFD-0\.5\.0\.md/);
+  assert.doesNotMatch(sharedDomain.hookSpecificOutput.additionalContext, /ui\.instructions\.md/);
+
+  // 3. Editing unscoped global CSS selector -> surfaces global CSS warning.
+  const globalCss = runHook(
+    HOOKS.claude,
+    {
+      hook_event_name: "PreToolUse",
+      session_id: "s-blast-3",
+      cwd: repo,
+      tool_name: "Edit",
+      tool_input: {
+        file_path: join(repo, "src/tabs/detail.component.scss"),
+        old_string: ".box { padding: 4px; }",
+        new_string: "::ng-deep mat-tab-body { display: flex; }",
+      },
+    },
+    { PLUGIN_DATA: data, INTENT_FIRST_PROFILE: "guided" },
+  );
+  assert.ok(globalCss, "expected global CSS warning");
+  assert.match(globalCss.hookSpecificOutput.additionalContext, /shared.*global or unscoped CSS selector/);
+});
+
+test("GitHub Copilot CLI (camelCase) and VS Code Copilot edit tools work seamlessly", () => {
+  const repo = makeRepo(
+    {
+      "docs/decisions/0001-billing.md": "# Billing\nNever round invoice IDs.\n",
+      "src/billing/format.ts": "export function formatInvoiceValue(v: number) { return String(v); }\n",
+      "src/billing/view.ts": "import { formatInvoiceValue } from './format.ts';\nexport const out = formatInvoiceValue(10);\n",
+    },
+    "keep invoice IDs integer",
+  );
+  const data = tempDir("ifw-copilot-");
+
+  // 1. Copilot CLI camelCase userPromptSubmitted (no hook_event_name field).
+  const cliPrompt = runHook(
+    HOOKS.copilot,
+    {
+      sessionId: "cop-cli-1",
+      timestamp: Date.now(),
+      cwd: repo,
+      prompt: "improve billing formatting across all fields",
+    },
+    { PLUGIN_DATA: data, INTENT_FIRST_PROFILE: "guided" },
+  );
+  assert.ok(cliPrompt);
+  assert.equal(cliPrompt.hookSpecificOutput, undefined);
+  assert.match(cliPrompt.additionalContext, /Intent first:/);
+
+  // 2. Copilot CLI camelCase preToolUse on non-edit tool ('view') -> fast silent null.
+  assert.equal(
+    runHook(
+      HOOKS.copilot,
+      {
+        sessionId: "cop-cli-1",
+        cwd: repo,
+        toolName: "view",
+        toolArgs: JSON.stringify({ path: "src/billing/format.ts" }),
+      },
+      { PLUGIN_DATA: data },
+    ),
+    null,
+  );
+
+  // 3. Copilot CLI camelCase preToolUse with stringified toolArgs -> returns { permissionDecision: "allow", additionalContext }.
+  const cliEdit = runHook(
+    HOOKS.copilot,
+    {
+      sessionId: "cop-cli-1",
+      cwd: repo,
+      toolName: "edit_file",
+      toolArgs: JSON.stringify({
+        path: "src/billing/format.ts",
+        old_str: "export function formatInvoiceValue(v: number) { return String(v); }",
+        new_str: "export function formatInvoiceValue(v: number) { return v.toFixed(2); }",
+      }),
+    },
+    { PLUGIN_DATA: data, INTENT_FIRST_PROFILE: "guided" },
+  );
+  assert.ok(cliEdit);
+  assert.equal(cliEdit.permissionDecision, "allow");
+  assert.match(cliEdit.additionalContext, /src\/billing\/view\.ts/);
+  assert.match(cliEdit.additionalContext, /Keep these decisions and contracts intact/);
+
+  // 4. VS Code Copilot PascalCase PreToolUse with replace_string_in_file & multi_replace_string_in_file.
+  const vscodeEdit = runHook(
+    HOOKS.copilot,
+    {
+      hook_event_name: "PreToolUse",
+      session_id: "cop-vscode-1",
+      cwd: repo,
+      tool_name: "replace_string_in_file",
+      tool_input: {
+        filePath: join(repo, "src/billing/format.ts"),
+        oldString: "export function formatInvoiceValue(v: number) { return String(v); }",
+        newString: "export function formatInvoiceValue(v: number) { return v.toFixed(2); }",
+      },
+    },
+    { PLUGIN_DATA: data },
+  );
+  assert.equal(vscodeEdit.hookSpecificOutput.hookEventName, "PreToolUse");
+  assert.match(vscodeEdit.hookSpecificOutput.additionalContext, /src\/billing\/view\.ts/);
+
+  const vscodeMulti = runHook(
+    HOOKS.copilot,
+    {
+      hook_event_name: "PreToolUse",
+      session_id: "cop-vscode-2",
+      cwd: repo,
+      tool_name: "multi_replace_string_in_file",
+      tool_input: {
+        replacements: [
+          {
+            filePath: join(repo, "src/billing/format.ts"),
+            oldString: "formatInvoiceValue",
+            newString: "formatInvoiceValue",
+          },
+        ],
+      },
+    },
+    { PLUGIN_DATA: data },
+  );
+  assert.match(vscodeMulti.hookSpecificOutput.additionalContext, /src\/billing\/view\.ts/);
+});

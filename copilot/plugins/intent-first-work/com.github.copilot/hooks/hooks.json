@@ -1,0 +1,21 @@
+{
+  "version": 1,
+  "hooks": {
+    "userPromptSubmitted": [
+      {
+        "type": "command",
+        "bash": "node \"${PLUGIN_ROOT}/com.github.copilot/hooks/intent-first-work.mjs\"",
+        "powershell": "node \"${PLUGIN_ROOT}/com.github.copilot/hooks/intent-first-work.mjs\"",
+        "timeoutSec": 10
+      }
+    ],
+    "preToolUse": [
+      {
+        "type": "command",
+        "bash": "node \"${PLUGIN_ROOT}/com.github.copilot/hooks/intent-first-work.mjs\"",
+        "powershell": "node \"${PLUGIN_ROOT}/com.github.copilot/hooks/intent-first-work.mjs\"",
+        "timeoutSec": 10
+      }
+    ]
+  }
+}
