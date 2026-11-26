@@ -64,6 +64,8 @@ A pure addition or a literal edit can leave the middle sections empty and say so
 
 - [ ] The approach addresses the root cause rather than layering a workaround or fabricating data.
 - [ ] The goal reflects the real user need, and the diff serves it without scope creep.
+- [ ] The rule is not duplicated across sibling paths (load vs. action, multiple screens) where copies can diverge.
+- [ ] Existing tests invoked as justification (or left green) were traced to their origin — a test describes past behaviour, not necessarily the intended rule.
 - [ ] Shared surfaces (domains, helpers, common components, global CSS) were not altered without
       checking field semantics and blast radius.
 - [ ] Every removed or rewritten block has a clear reason; no intentional behaviour was quietly lost.

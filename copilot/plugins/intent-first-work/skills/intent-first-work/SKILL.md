@@ -34,7 +34,11 @@ Understand why the system is shaped the way it is before changing it.
 - **Meaning before form.** Read local decisions, rules, and sibling implementations before
   inventing a new pattern or abstraction.
 - **Root cause over quick patches.** Do not throw code, flags, or special cases at a request just
-  to make a check pass. Treat the real cause so the codebase stays coherent.
+  to make a check pass. Treat the real cause, and check sibling paths for copies of the same rule
+  before adding another one so the codebase stays coherent.
+- **Tests describe what the code does, not what it should do.** Trace an existing test to its
+  origin before treating it as a rule; when it contradicts the ticket, spec, or requested
+  correction, the test is what changes — and the report says so.
 - **Respect existing behaviour and consumers.** Before replacing, wrapping, or removing code,
   check who depends on it and what behaviour exists for a reason. Treat surprises as possibly
   intentional until history or code proves otherwise.
@@ -47,8 +51,9 @@ executing — light, direct, no ceremony:
 - **Goal:** one sentence (what the user wants and why).
 - **System coherence:** key existing patterns, decisions, or consumers that bound the work.
 - **Out of scope:** what you will deliberately not touch.
-- **Questions (0–2 max):** only decisions you cannot make yourself, each with your default if
-  unanswered.
+- **Questions (0–2 max):** only decisions you cannot make yourself — one line each, with your
+  recommended default in **bold**. When recommending a structural option, pair it with the
+  simplest reversible alternative.
 
 If a single interpretation clearly fits and is easy to reverse, skip the pause: state your
 assumption in one line and proceed. In an unattended run, write the brief, take your named
@@ -61,8 +66,9 @@ defaults, and note them in the result.
 - Before saying done, check the outcome against the real goal — not only that a narrow test or
   build passed. Test real failure modes (edge inputs, cancellation, repeated calls, real runtime
   behaviour) rather than constants.
-- Report concisely: distinguish verified facts from assumptions, and mention existing behaviour
-  only if something was changed, dropped, or put at risk.
+- Report concisely: distinguish verified facts from assumptions, name which sources you checked —
+  or did not — when a conclusion depends on them, and mention existing behaviour only if something
+  was changed, dropped, or put at risk.
 
 ## With the other skills
 

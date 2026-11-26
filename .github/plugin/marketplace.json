@@ -6,12 +6,12 @@
   },
   "metadata": {
     "description": "Dreambel Tech's GitHub Copilot plugins and agent skills.",
-    "version": "0.3.0"
+    "version": "0.3.1"
   },
   "plugins": [
     {
       "name": "intent-first-work",
-      "version": "0.3.0",
+      "version": "0.3.1",
       "description": "Silent-by-default intent and coherence plugin: adapts guidance to model capability on ambiguous or structural prompts, and pushes unread local decisions, shared blast-radius warnings, and consumers right before edits.",
       "source": "./copilot/plugins/intent-first-work"
     }

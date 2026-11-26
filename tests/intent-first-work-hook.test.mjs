@@ -281,6 +281,8 @@ test("analyzePrompt triggers on ambiguous goals, structural changes, and vague b
     mod.analyzePrompt("Bug:\n- Le lecteur 3 est absent des graphiques\n- Aucun historique disponible\n- Doit afficher l'onglet")?.reason,
     "inherited_or_review",
   );
+  assert.equal(mod.analyzePrompt("Test KO, même KO que l'anomalie après la livraison")?.reason, "inherited_or_review");
+  assert.equal(mod.analyzePrompt("still broken in staging after the merge")?.reason, "inherited_or_review");
 });
 
 for (const [tool, hook] of Object.entries(HOOKS)) {

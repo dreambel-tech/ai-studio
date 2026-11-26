@@ -169,6 +169,54 @@ confusion.
 > Did I spot a model mismatch or missing concept while implementing? Fix it if in scope, or flag
 > it explicitly in the report instead of hiding it.
 
+## Reading an existing test as the specification
+
+A review demanded "no chart for a channel without data" because an older coverage test asserted
+it, while the spec required four charts and the product owner wanted the device always shown.
+Another test asserted "record unchanged" while that very rule was still an open question with the
+client.
+
+> Where does this test come from, and what decision does it encode? If the ticket, spec, or
+> requested correction says otherwise, the test is what changes — and the report says so.
+
+## Concluding from one source
+
+- Asked "how did we do it on the sister project?", an agent answered "the same" after reading only
+  the internal repository; the fix existed only in the copy delivered to the client.
+- A green test read a folder outside its module that the delivered repository did not contain.
+- An action link was judged "visible to everyone" from the spec of the tab showing it, without
+  checking that the target page was restricted to another role.
+
+> How many places govern this (repositories, environments, code paths, target permissions)? Which
+> ones did I actually read, and which ones did I not?
+
+## Diagnosing the code before checking what runs
+
+A bug reported "still broken" after a merge was tested on a staging environment deployed half an
+hour before that merge. Another check ran against the shared test server when "dev" meant the
+local branch.
+
+> Which commit is actually running where this was observed? When a word names two things (`dev`,
+> `staging`, `the release`), which one is meant?
+
+## One rule, several copies
+
+A rule was computed on page load (in five places) and forgotten in every user action; one domain
+concept had four slightly different definitions; a field was formatted three ways across three
+screens, one of them wrong.
+
+> Where else is this rule, field, or concept computed? Does my change leave one shared place, or
+> add another copy?
+
+## Defending a first reading
+
+After the owner picked another option, the agent recommended its own again; asked to edit
+directly, it opened a branch and worktree by reflex; it proposed only a structural overhaul when a
+simple reversible fallback existed.
+
+> Have I stated my view once, with its risk and the simplest reversible option? Once the owner
+> decides, execute what was chosen.
+
 ## The same traps outside code
 
 - **Document**: a status page listing as done what was only planned; a summary that drops the
